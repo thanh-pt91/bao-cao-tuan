@@ -346,32 +346,44 @@ function clearApiUrl() {
 // ══════════════════════════════════════════════
 //  API CALLS
 // ══════════════════════════════════════════════
+// ── JSONP (bypass CORS voi Google Apps Script) ──
+var _jsonpCbIdx = 0;
 function apiGet(params, cb) {
   if (!apiUrl) { cb(null, 'Chưa cấu hình API URL'); return; }
+  var cbName = '_gjsonp' + (++_jsonpCbIdx);
+  params.callback = cbName;
   var url = apiUrl + '?' + Object.keys(params).map(function(k){ return k+'='+encodeURIComponent(params[k]); }).join('&');
-  fetch(url, { redirect: 'follow' })
-    .then(function(r){ return r.text(); })
-    .then(function(text){
-      try { cb(JSON.parse(text), null); }
-      catch(e) { cb(null, 'Phản hồi không phải JSON. Kiểm tra lại Web App URL và quyền deploy.'); }
-    })
-    .catch(function(e){ cb(null, e.toString()); });
+  var timer = setTimeout(function(){
+    delete window[cbName];
+    var s = document.getElementById(cbName);
+    if (s) s.parentNode.removeChild(s);
+    cb(null, 'Timeout — kiểm tra lại Web App URL');
+  }, 15000);
+  window[cbName] = function(data) {
+    clearTimeout(timer);
+    delete window[cbName];
+    var s = document.getElementById(cbName);
+    if (s) s.parentNode.removeChild(s);
+    cb(data, null);
+  };
+  var s = document.createElement('script');
+  s.id = cbName;
+  s.src = url;
+  s.onerror = function(){
+    clearTimeout(timer);
+    delete window[cbName];
+    s.parentNode.removeChild(s);
+    cb(null, 'Không thể tải script — kiểm tra URL');
+  };
+  document.head.appendChild(s);
 }
 
 function apiPost(body, cb) {
   if (!apiUrl) { cb(null, 'Chưa cấu hình API URL'); return; }
-  fetch(apiUrl, {
-    method: 'POST',
-    redirect: 'follow',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body)
-  })
-    .then(function(r){ return r.text(); })
-    .then(function(text){
-      try { cb(JSON.parse(text), null); }
-      catch(e) { cb(null, 'Phản hồi không phải JSON. Kiểm tra lại Web App URL và quyền deploy.'); }
-    })
-    .catch(function(e){ cb(null, e.toString()); });
+  // Encode toan bo body thanh GET params de dung JSONP
+  // GAS doc tu e.parameter thay vi e.postData
+  var params = { action: body.action, payload: encodeURIComponent(JSON.stringify(body)) };
+  apiGet(params, cb);
 }
 
 // ══════════════════════════════════════════════
