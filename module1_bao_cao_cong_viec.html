@@ -136,7 +136,11 @@ td:last-child{border-right:none}
 .cin:focus{outline:2px solid var(--primary);background:var(--white)}
 select.cin{cursor:pointer;overflow:hidden;white-space:normal;height:auto;text-align:center;text-align-last:center}
 input.cin{text-align:center}
-td{padding:6px 8px;vertical-align:top;font-size:13px;color:var(--text);border-right:1px solid var(--border);height:auto}
+td{padding:6px 8px;vertical-align:middle;font-size:13px;color:var(--text);border-right:1px solid var(--border);height:auto}
+td:last-child{border-right:none}
+.td-stt{text-align:center;color:var(--text3);font-size:11px;font-weight:700;width:32px}
+/* Textarea cell: align top so autoH works correctly */
+td:has(textarea){vertical-align:top}
 .empty-td{text-align:center;padding:48px;color:var(--text3)}
 .empty-ico{font-size:36px;display:block;margin-bottom:10px;opacity:.3}
 
