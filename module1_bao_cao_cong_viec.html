@@ -861,7 +861,7 @@ function reloadFromSheet() {
 //  WEEK SELECT
 // ══════════════════════════════════════════════
 function buildWeekSel() {
-  var s = document.getElementById('weekSel');
+  var s = document.getElementById('weekSel'); // co the null trong HTML moi — OK
   var cur = s ? s.value : (curWeek || '');
   if (s) {
     s.innerHTML = '<option value="">-- Chọn tuần --</option>';
@@ -888,10 +888,12 @@ function buildWeekSel() {
     return parseWeekStart(b) - parseWeekStart(a); // Moi nhat len truoc
   });
   for (var i = 0; i < sorted.length; i++) {
-    var o = document.createElement('option');
-    o.value = sorted[i];
-    o.textContent = 'Tuần ' + sorted[i];
-    s.appendChild(o);
+    if (s) {  // chi append neu co element weekSel
+      var o = document.createElement('option');
+      o.value = sorted[i];
+      o.textContent = 'Tuần ' + sorted[i];
+      s.appendChild(o);
+    }
   }
   if (s && cur && weeksList.indexOf(cur) >= 0) s.value = cur;
   buildSideWeekList();
@@ -1539,11 +1541,6 @@ function formatVND(n) {
   return n.toLocaleString('vi-VN');
 }
 
-// init dates on load
-window.addEventListener('load', function(){
-  txSetThisWeek();
-});
-
 // ── TOROG LOGIN MODAL ──────────────────────────
 function openLoginModal() {
   document.getElementById('tokenModal').classList.add('open');
@@ -1589,6 +1586,12 @@ function torogDoLogin() {
     }
   );
 }
+
+// ── INIT ── chay sau khi tat ca scripts (ke ca config.js) da load xong
+window.addEventListener('load', function() {
+  init();
+  txSetThisWeek();
+});
 
 </script>
 </body>
