@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Module 1 — Báo cáo công việc</title>
+<title>Báo cáo công việc - Thành</title>
 <script src="config.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
@@ -183,7 +183,6 @@ select.cin{cursor:pointer}
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-left">
-    <div class="mod-tag">MODULE 1</div>
     <div class="topbar-title">Báo cáo công việc</div>
     <div class="sync-status loading" id="syncStatus">● Chưa kết nối</div>
   </div>
@@ -412,9 +411,9 @@ function apiGet(params, cb) {
 
 function apiPost(body, cb) {
   if (!apiUrl) { cb(null, 'Chưa cấu hình API URL'); return; }
-  // Encode toan bo body thanh GET params de dung JSONP
-  // GAS doc tu e.parameter thay vi e.postData
-  var params = { action: body.action, payload: encodeURIComponent(JSON.stringify(body)) };
+  // Encode body thanh GET params de dung JSONP
+  // KHONG double-encode: apiGet se tu encodeURIComponent khi build URL
+  var params = { action: body.action, payload: JSON.stringify(body) };
   apiGet(params, cb);
 }
 
@@ -688,14 +687,14 @@ function rowHTML(r, i) {
   if (r.ngay && r.ngay.indexOf('/') > 0) { var dp=r.ngay.split('/'); ngayVal=dp[2]+'-'+dp[1]+'-'+dp[0]; }
   return '<tr>'
     +'<td class="td-stt">'+(i+1)+'</td>'
-    +'<td><textarea class="cin" rows="2" oninput="autoH(this)" onchange="setF('+i+',\'ph\',this.value);mark()">'+escH(r.ph||'')+'</textarea></td>'
-    +'<td><textarea class="cin" rows="2" oninput="autoH(this)" onchange="setF('+i+',\'tn\',this.value);mark()">'+escH(r.tn||'')+'</textarea></td>'
-    +'<td><textarea class="cin" rows="2" oninput="autoH(this)" onchange="setF('+i+',\'mt\',this.value);mark()">'+escH(r.mt||'')+'</textarea></td>'
+    +'<td><textarea class="cin" rows="2" oninput="autoH(this);setF('+i+',\'ph\',this.value);mark()">'+escH(r.ph||'')+'</textarea></td>'
+    +'<td><textarea class="cin" rows="2" oninput="autoH(this);setF('+i+',\'tn\',this.value);mark()">'+escH(r.tn||'')+'</textarea></td>'
+    +'<td><textarea class="cin" rows="2" oninput="autoH(this);setF('+i+',\'mt\',this.value);mark()">'+escH(r.mt||'')+'</textarea></td>'
     +'<td style="text-align:center"><select class="cin ctr" onchange="setF('+i+',\'pri\',this.value);mark();updateStats()">'+priOpts+'</select></td>'
     +'<td><input type="text" class="cin ctr" value="'+escH(r.tg||'')+'" placeholder="0.5" onchange="setF('+i+',\'tg\',this.value);mark()"></td>'
     +'<td style="text-align:center"><input type="date" class="cin ctr" value="'+ngayVal+'" onchange="setNgay('+i+',this.value);mark()"></td>'
     +'<td><select class="cin" onchange="setF('+i+',\'ts\',this.value);mark();updateStats()">'+tsOpts+'</select></td>'
-    +'<td><textarea class="cin" rows="2" oninput="autoH(this)" onchange="setF('+i+',\'gc\',this.value);mark()">'+escH(r.gc||'')+'</textarea></td>'
+    +'<td><textarea class="cin" rows="2" oninput="autoH(this);setF('+i+',\'gc\',this.value);mark()">'+escH(r.gc||'')+'</textarea></td>'
     +'<td style="text-align:center"><button class="btn btn-xs btn-danger" onclick="delRow('+i+')">✕</button></td>'
     +'</tr>';
 }
