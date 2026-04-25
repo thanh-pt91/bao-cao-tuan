@@ -854,7 +854,7 @@ function fetchWeeks() {
     }
     weeksList = data.weeks || [];
     buildWeekSel();
-    setSyncStatus('ok', 'Đã kết nối Sheets');
+    setSyncStatus('ok', 'Đã kết nối');
     showToast('Đã tải '+weeksList.length+' tuần từ Google Sheets','ok');
   });
 }
