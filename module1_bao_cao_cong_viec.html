@@ -533,12 +533,12 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
           </div>
         </div>
         <!-- Chi tiết theo ngày -->
-        <div class="section-block">
+        <div class="section-block" style="margin-bottom:16px">
           <div class="section-block-title">📋 Chi tiết theo ngày</div>
           <div class="tbl-scroll">
             <table class="rpt-tbl">
               <thead><tr>
-                <th style="text-align:left">Ngày</th>
+                <th style="text-align:center">Ngày</th>
                 <th>Tổng GD</th><th>Thành công</th><th>Void</th><th>Doanh thu</th>
                 <th>VISA</th><th>MC</th><th>NAPAS</th><th>JCB</th><th>UPI</th>
               </tr></thead>
@@ -546,6 +546,42 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
             </table>
           </div>
         </div>
+
+        <!-- HEATMAP GIỜ × NGÀY -->
+        <div class="section-block" style="margin-bottom:16px">
+          <div class="section-block-title">🌡️ Heatmap GD theo giờ × ngày</div>
+          <div style="padding:16px;overflow-x:auto" id="txHeatmap"></div>
+        </div>
+
+        <!-- MERCHANT TĂNG/GIẢM -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div class="section-block">
+            <div class="section-block-title" style="color:#10B981">📈 Merchant tăng mạnh</div>
+            <div class="tbl-scroll">
+              <table class="rpt-tbl"><thead><tr>
+                <th style="text-align:left">Merchant</th><th>Tuần này</th><th>Tuần trước</th><th>Tăng</th>
+              </tr></thead><tbody id="txMerchUp"></tbody></table>
+            </div>
+          </div>
+          <div class="section-block">
+            <div class="section-block-title" style="color:#EF4444">📉 Merchant giảm mạnh</div>
+            <div class="tbl-scroll">
+              <table class="rpt-tbl"><thead><tr>
+                <th style="text-align:left">Merchant</th><th>Tuần này</th><th>Tuần trước</th><th>Giảm</th>
+              </tr></thead><tbody id="txMerchDown"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- GD TRUNG BÌNH THEO THIẾT BỊ -->
+        <div class="section-block" style="margin-bottom:16px">
+          <div class="section-block-title">📱 GD trung bình/ngày theo dòng thiết bị</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px">
+            <div style="height:220px;position:relative"><canvas id="chartDeviceAvg"></canvas></div>
+            <div id="txDeviceAvgTable" style="display:flex;flex-direction:column;justify-content:center;gap:10px"></div>
+          </div>
+        </div>
+
       </div>
 
       <!-- PLACEHOLDER -->
@@ -1681,6 +1717,18 @@ function renderFullDashboard(results) {
       +'<td style="text-align:center">'+(r.UNIONPAY||0).toLocaleString('vi-VN')+'</td>'
       +'</tr>';
   }).join('');
+
+  // ── 3 BÁO CÁO MỚI ─────────────────────────────
+  // Heatmap
+  renderHeatmap((results.hourly||{}).rows || []);
+
+  // Merchant spike
+  var prevMerchMap2 = {};
+  ((results.prevMerchant||{}).merchants || []).forEach(function(m){ prevMerchMap2[m.tid] = m.count; });
+  renderMerchantSpike(merchants, prevMerchMap2);
+
+  // Device average
+  renderDeviceAvg((results.device||{}).rows || []);
 }
 
 // Parse DD/MM/YYYY → timestamp để sort
@@ -1688,6 +1736,137 @@ function parseVNDate(str) {
   if (!str) return 0;
   var p = str.split('/');
   return p.length === 3 ? new Date(+p[2], +p[1]-1, +p[0]).getTime() : 0;
+}
+
+// ── HEATMAP GIỜ × NGÀY ────────────────────────
+function renderHeatmap(hourlyRows) {
+  if (!hourlyRows || !hourlyRows.length) {
+    document.getElementById('txHeatmap').innerHTML = '<div style="color:var(--text2);padding:8px">Chưa có dữ liệu hourly — cần sync lại để có data theo giờ.</div>';
+    return;
+  }
+
+  var HOURS = []; for(var h=0;h<24;h++) HOURS.push(String(h).padStart(2,'0'));
+  // Sort rows theo ngày tăng dần
+  var rows = hourlyRows.slice().sort(function(a,b){ return parseVNDate(a.date)-parseVNDate(b.date); });
+
+  // Tính max để scale màu
+  var maxVal = 0;
+  rows.forEach(function(r){ HOURS.forEach(function(hh){ if((r.byHour[hh]||0)>maxVal) maxVal=r.byHour[hh]||0; }); });
+
+  function heatColor(val) {
+    if (!val || maxVal===0) return '#F1F5F9';
+    var ratio = val / maxVal;
+    if (ratio < 0.2) return '#DBEAFE';
+    if (ratio < 0.4) return '#93C5FD';
+    if (ratio < 0.6) return '#3B82F6';
+    if (ratio < 0.8) return '#1D4ED8';
+    return '#1E3A8A';
+  }
+  function textColor(val) {
+    if (!val||maxVal===0) return '#94A3B8';
+    return val/maxVal > 0.4 ? '#fff' : '#1E3A8A';
+  }
+
+  var colW = 52;
+  var html = '<div style="display:flex;gap:0;align-items:flex-start">';
+  // Label cột giờ (header)
+  html += '<div style="flex-shrink:0;width:72px"></div>';
+  rows.forEach(function(r){
+    html += '<div style="width:'+colW+'px;text-align:center;font-size:10px;font-weight:700;color:var(--text2);padding-bottom:4px;flex-shrink:0">'+r.date.substring(0,5)+'</div>';
+  });
+  html += '</div>';
+
+  // Rows = giờ
+  HOURS.forEach(function(hh){
+    html += '<div style="display:flex;gap:0;align-items:center;margin-bottom:2px">';
+    html += '<div style="flex-shrink:0;width:72px;font-size:11px;color:var(--text2);text-align:right;padding-right:8px;font-weight:600">'+hh+':00</div>';
+    rows.forEach(function(r){
+      var val = r.byHour[hh]||0;
+      html += '<div title="'+r.date+' '+hh+'h: '+val.toLocaleString(\'vi-VN\')+' GD" style="width:'+colW+'px;height:28px;background:'+heatColor(val)+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:'+textColor(val)+';border:1px solid rgba(255,255,255,0.3);flex-shrink:0;cursor:default">'+(val>0?val:'')+'</div>';
+    });
+    html += '</div>';
+  });
+
+  document.getElementById('txHeatmap').innerHTML = html
+    + '<div style="margin-top:10px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)">'
+    + '<span>Ít</span>'
+    + ['#DBEAFE','#93C5FD','#3B82F6','#1D4ED8','#1E3A8A'].map(function(c){ return '<div style="width:20px;height:12px;background:'+c+'"></div>'; }).join('')
+    + '<span>Nhiều</span></div>';
+}
+
+// ── MERCHANT TĂNG/GIẢM ──────────────────────────
+function renderMerchantSpike(merchants, prevMerchMap) {
+  var MIN_PCT = 20; // Ngưỡng 20% mới tính là đột ngột
+  var MIN_COUNT = 50; // Ít nhất 50 GD mới xét
+
+  var up = [], down = [];
+  merchants.forEach(function(m) {
+    var prev = prevMerchMap[m.tid] || 0;
+    if (!prev || m.count < MIN_COUNT) return;
+    var pct = Math.round((m.count - prev) / prev * 100);
+    if (pct >= MIN_PCT)  up.push({m:m, prev:prev, pct:pct});
+    if (pct <= -MIN_PCT) down.push({m:m, prev:prev, pct:pct});
+  });
+
+  up.sort(function(a,b){ return b.pct-a.pct; });
+  down.sort(function(a,b){ return a.pct-b.pct; });
+
+  function row(item, isUp) {
+    var color = isUp ? '#10B981' : '#EF4444';
+    var arrow = isUp ? '▲' : '▼';
+    return '<tr>'
+      +'<td style="font-size:12px">'+item.m.merchant+'<br><span style="font-size:10px;color:var(--text3);font-family:monospace">'+item.m.tid+'</span></td>'
+      +'<td style="text-align:center;font-weight:700">'+item.m.count.toLocaleString('vi-VN')+'</td>'
+      +'<td style="text-align:center;color:var(--text2)">'+item.prev.toLocaleString('vi-VN')+'</td>'
+      +'<td style="text-align:center;font-weight:700;color:'+color+'">'+arrow+' '+Math.abs(item.pct)+'%</td>'
+      +'</tr>';
+  }
+
+  document.getElementById('txMerchUp').innerHTML   = up.slice(0,10).map(function(i){ return row(i,true); }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text2);padding:12px">Không có merchant tăng đột ngột</td></tr>';
+  document.getElementById('txMerchDown').innerHTML = down.slice(0,10).map(function(i){ return row(i,false); }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text2);padding:12px">Không có merchant giảm đột ngột</td></tr>';
+}
+
+// ── GD TRUNG BÌNH THEO THIẾT BỊ ─────────────────
+var txChartDeviceAvg = null;
+function renderDeviceAvg(deviceRows) {
+  var TYPES = ['Sunmi P1','Sunmi P2','Nexgo','Nayax','Khac'];
+  var COLORS= ['#5B47E0','#3B82F6','#10B981','#F59E0B','#94A3B8'];
+
+  var sumByType = {}; var dayCount = deviceRows.length || 1;
+  TYPES.forEach(function(t){ sumByType[t] = 0; });
+  deviceRows.forEach(function(r){
+    TYPES.forEach(function(t){ sumByType[t] += r[t]||0; });
+  });
+
+  var avgData = TYPES.map(function(t){ return Math.round(sumByType[t]/dayCount); });
+  var totalAvg = avgData.reduce(function(a,b){ return a+b; },0) || 1;
+
+  if (txChartDeviceAvg) txChartDeviceAvg.destroy();
+  txChartDeviceAvg = new Chart(document.getElementById('chartDeviceAvg'), {
+    type:'bar',
+    data:{ labels:TYPES, datasets:[{ label:'TB GD/ngày', data:avgData, backgroundColor:COLORS, borderRadius:6 }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{ callbacks:{ label:function(ctx){
+          return ctx.parsed.y.toLocaleString('vi-VN')+' GD/ngày ('+Math.round(ctx.parsed.y/totalAvg*100)+'%)';
+        }}}
+      },
+      scales:{ x:{grid:{display:false}}, y:{beginAtZero:true,
+        ticks:{ callback:function(v){ return v.toLocaleString('vi-VN'); } }
+      }}
+    }
+  });
+
+  // Bảng tóm tắt bên phải
+  document.getElementById('txDeviceAvgTable').innerHTML = TYPES.map(function(t,i){
+    var avg = avgData[i]; var pct = Math.round(avg/totalAvg*100);
+    return '<div style="display:flex;align-items:center;gap:10px">'
+      +'<div style="width:12px;height:12px;border-radius:3px;background:'+COLORS[i]+';flex-shrink:0"></div>'
+      +'<div style="flex:1;font-size:13px;font-weight:600">'+t+'</div>'
+      +'<div style="font-size:13px;font-weight:700">'+avg.toLocaleString('vi-VN')+'</div>'
+      +'<div style="font-size:11px;color:var(--text2);width:36px;text-align:right">'+pct+'%</div>'
+      +'</div>';
+  }).join('');
 }
 
 function formatVND(n) {
