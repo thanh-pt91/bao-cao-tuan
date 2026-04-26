@@ -530,16 +530,16 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
         </div>
 
         <!-- Row 4: Thiết bị + Top 20 Merchant -->
-        <div class="tx-grid-2" style="margin-bottom:16px">
-          <div class="section-block">
+        <div class="tx-grid-2" style="margin-bottom:16px;align-items:stretch">
+          <div class="section-block" style="display:flex;flex-direction:column;max-height:380px">
             <div class="section-block-title">📱 Theo dòng thiết bị</div>
-            <div style="padding:16px;height:240px;position:relative"><canvas id="chartByDevice"></canvas></div>
+            <div style="padding:16px;flex:1;position:relative"><canvas id="chartByDevice"></canvas></div>
           </div>
-          <div class="section-block">
+          <div class="section-block" style="display:flex;flex-direction:column;max-height:380px">
             <div class="section-block-title">🏆 Top 20 Merchant</div>
-            <div class="tbl-scroll" style="max-height:480px;overflow-y:auto">
+            <div class="tbl-scroll" style="flex:1;overflow-y:auto">
               <table class="rpt-tbl"><thead><tr>
-                <th>#</th><th style="text-align:left">TID</th><th style="text-align:left">Merchant</th><th>Số GD</th><th>Doanh thu</th>
+                <th>#</th><th style="text-align:center">TID</th><th style="text-align:center">Merchant</th><th>Số GD</th><th style="text-align:center">Doanh thu</th>
               </tr></thead><tbody id="topMerchantBody"></tbody></table>
             </div>
           </div>
@@ -1680,9 +1680,9 @@ function renderFullDashboard(results) {
     return '<tr>'
       +'<td style="text-align:center" class="td-num">'+(i+1)+'</td>'
       +'<td style="text-align:center;font-family:monospace;font-size:11px;color:var(--primary)">'+m.tid+'</td>'
-      +'<td style="text-align:left;font-size:12px">'+m.merchant+'</td>'
+      +'<td style="text-align:center;font-size:12px">'+m.merchant+'</td>'
       +'<td style="text-align:center;font-weight:700">'+m.count.toLocaleString('vi-VN')+cntHtml+'</td>'
-      +'<td style="text-align:right;font-weight:600;color:var(--primary)">'+formatVND(m.amount||0)+amtHtml+'</td>'
+      +'<td style="text-align:center;font-weight:600;color:var(--primary)">'+formatVND(m.amount||0)+amtHtml+'</td>'
       +'</tr>';
   }).join('');
 
@@ -1790,7 +1790,7 @@ function renderHeatmap(hourlyRows) {
       var ttl = r.date+' '+hh+'h: '+val.toLocaleString('vi-VN')+' GD';
       var bg  = heatColor(val);
       var fc  = textColor(val);
-      html += '<div title="'+ttl+'" style="flex:1;height:26px;background:'+bg+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:'+fc+';border:1px solid rgba(255,255,255,0.3);cursor:default;min-width:0">'+(val>0?val:'')+'</div>';
+      html += '<div title="'+ttl+'" style="flex:1;height:26px;background:'+bg+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:'+fc+';border:1px solid rgba(255,255,255,0.3);cursor:default;min-width:0">'+(val>0?val:'')+'</div>';
     });
     html += '</div>';
   });
