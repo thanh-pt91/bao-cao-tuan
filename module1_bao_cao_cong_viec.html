@@ -1764,16 +1764,14 @@ function txLoadThisWeek() {
   var mon = new Date(now); mon.setDate(now.getDate() - day + 1);
   var sun = new Date(mon); sun.setDate(mon.getDate() + 6);
   function fmt(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-  document.getElementById('txRptFrom').value = fmt(mon);
-  document.getElementById('txRptTo').value   = fmt(sun);
+  loadWeeklyReport(fmt(mon), fmt(sun));
 }
 function txLoadLastWeek() {
   var now = new Date(), day = now.getDay() || 7;
   var mon = new Date(now); mon.setDate(now.getDate() - day - 6);
   var sun = new Date(mon); sun.setDate(mon.getDate() + 6);
   function fmt(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-  document.getElementById('txRptFrom').value = fmt(mon);
-  document.getElementById('txRptTo').value   = fmt(sun);
+  loadWeeklyReport(fmt(mon), fmt(sun));
 }
 
 // ── ĐỌC FILE XLSX BẰNG SHEETJS ──────────────────
@@ -1883,97 +1881,6 @@ function pushDailyToSheet() {
   });
 }
 
-// ── XEM BÁO CÁO TUẦN ────────────────────────────
-function loadWeeklyReport() {
-  var from = document.getElementById('txRptFrom').value;
-  var to   = document.getElementById('txRptTo').value;
-  // Convert YYYY-MM-DD -> DD/MM/YYYY cho GAS
-  function toDMY(s){ if(!s) return ''; var p=s.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
-
-  document.getElementById('txError').style.display = 'none';
-  document.getElementById('txKpiGrid').style.display = 'none';
-  document.getElementById('txCharts').style.display = 'none';
-
-  apiGet({
-    action: 'getWeeklyReport',
-    from: toDMY(from),
-    to: toDMY(to)
-  }, function(data, err) {
-    if (err || (data && data.error)) {
-      document.getElementById('txError').style.display = 'block';
-      document.getElementById('txErrorTitle').textContent = 'Lỗi tải báo cáo';
-      document.getElementById('txErrorDesc').textContent = err || data.error;
-      return;
-    }
-    if (!data.rows || data.rows.length === 0) {
-      document.getElementById('txPlaceholder').style.display = 'block';
-      document.getElementById('txPlaceholder').querySelector('.rpt-placeholder-title').textContent = 'Chưa có dữ liệu trong khoảng này';
-      return;
-    }
-    document.getElementById('txPlaceholder').style.display = 'none';
-    renderWeeklyDashboard(data.rows, data.totals);
-  });
-}
-
-function renderWeeklyDashboard(rows, totals) {
-  // KPI
-  document.getElementById('txKpiGrid').style.display = 'grid';
-  document.getElementById('txTotal').textContent   = totals.total.toLocaleString('vi-VN');
-  document.getElementById('txSuccess').textContent = totals.success.toLocaleString('vi-VN');
-  document.getElementById('txFailed').textContent  = (totals.failed + totals.void).toLocaleString('vi-VN');
-  document.getElementById('txAmount').textContent  = formatVND(totals.amount);
-  document.getElementById('txRate').textContent    = totals.total > 0 ? Math.round(totals.success/totals.total*100)+'% thành công' : '';
-
-  document.getElementById('txCharts').style.display = 'block';
-
-  // Bar chart theo ngày
-  var labels  = rows.map(function(r){ return r.date; });
-  var sucData = rows.map(function(r){ return r.success; });
-  var failData= rows.map(function(r){ return r.failed + r.void; });
-  if (txChartDate) txChartDate.destroy();
-  txChartDate = new Chart(document.getElementById('chartByDate'), {
-    type: 'bar',
-    data: { labels: labels, datasets: [
-      { label:'Thành công', data:sucData, backgroundColor:'#10B981', borderRadius:4 },
-      { label:'Thất bại/Void', data:failData, backgroundColor:'#EF4444', borderRadius:4 }
-    ]},
-    options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'top' } },
-      scales:{ x:{ stacked:false, grid:{ display:false } }, y:{ beginAtZero:true } }
-    }
-  });
-
-  // Donut loại thẻ
-  var cardKeys = ['VISA','MASTERCARD','NAPAS','JCB','UNIONPAY'];
-  var cardColors = ['#1A56DB','#E74694','#0E9F6E','#057A55','#C81E1E'];
-  var cardData = cardKeys.map(function(k){ return totals[k] || 0; });
-  if (txChartCard) txChartCard.destroy();
-  txChartCard = new Chart(document.getElementById('chartByCard'), {
-    type: 'doughnut',
-    data: { labels: cardKeys, datasets: [{ data: cardData, backgroundColor: cardColors, borderWidth:0, hoverOffset:6 }] },
-    options: { responsive:true, maintainAspectRatio:false, cutout:'65%',
-      plugins:{ legend:{ position:'bottom' } }
-    }
-  });
-
-  // Bảng chi tiết
-  document.getElementById('txDailyBody').innerHTML = rows.map(function(r){
-    var rate = r.total > 0 ? Math.round(r.success/r.total*100) : 0;
-    return '<tr>'
-      +'<td style="font-weight:600">'+r.date+'</td>'
-      +'<td style="text-align:center">'+r.total.toLocaleString('vi-VN')+'</td>'
-      +'<td style="text-align:center;color:var(--green)">'+r.success.toLocaleString('vi-VN')+' <span style="font-size:10px">('+rate+'%)</span></td>'
-      +'<td style="text-align:center;color:var(--red)">'+(r.failed).toLocaleString('vi-VN')+'</td>'
-      +'<td style="text-align:center;color:var(--text2)">'+r.void.toLocaleString('vi-VN')+'</td>'
-      +'<td style="text-align:right;font-weight:600">'+formatVND(r.amount)+'</td>'
-      +'<td style="text-align:center">'+r.VISA+'</td>'
-      +'<td style="text-align:center">'+r.MASTERCARD+'</td>'
-      +'<td style="text-align:center">'+r.NAPAS+'</td>'
-      +'<td style="text-align:center">'+r.JCB+'</td>'
-      +'<td style="text-align:center">'+r.UNIONPAY+'</td>'
-      +'</tr>';
-  }).join('');
-}
 
 function formatVND(n) {
   if (!n || n === 0) return '0';
