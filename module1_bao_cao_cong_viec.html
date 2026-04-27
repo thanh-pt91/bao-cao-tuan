@@ -2324,20 +2324,65 @@ function uploadReportFile(input, fileType) {
 }
 
 function loadTicketReport(weekName) {
+  // Tim file ticket trong Drive, download ve, parse bang SheetJS roi gui GAS
   document.getElementById('ticketBlock').style.display = 'block';
   document.getElementById('ticketTableBody').innerHTML =
-    '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px">⏳ Đang xử lý file ticket...</td></tr>';
+    '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px">⏳ Đang tải file ticket từ Drive...</td></tr>';
 
-  apiGet({ action:'getTicketReport', weekName: weekName }, function(res) {
+  // Lay file ID tu listWeekFiles
+  apiGet({ action:'listWeekFiles', weekName: weekName }, function(res) {
     if (!res || res.error) {
       document.getElementById('ticketTableBody').innerHTML =
         '<tr><td colspan="5" style="text-align:center;color:#EF4444;padding:16px">' + (res && res.error || 'Lỗi') + '</td></tr>';
       return;
     }
-    renderTicketReport(res);
-  }, function() {
+    var ticketFile = (res.files || []).find(function(f){ return f.type === 'ticket'; });
+    if (!ticketFile) {
+      document.getElementById('ticketBlock').style.display = 'none'; return;
+    }
+    // Download file tu Drive qua GAS proxy
+    apiGet({ action:'getFileAsBase64', fileId: ticketFile.id }, function(r2) {
+      if (!r2 || r2.error || !r2.data) {
+        document.getElementById('ticketTableBody').innerHTML =
+          '<tr><td colspan="5" style="text-align:center;color:#EF4444;padding:16px">' + (r2 && r2.error || 'Lỗi download') + '</td></tr>';
+        return;
+      }
+      // Parse bang SheetJS
+      try {
+        var binary = atob(r2.data);
+        var bytes  = new Uint8Array(binary.length);
+        for (var i=0; i<binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        var wb   = XLSX.read(bytes, {type:'array', cellDates:true});
+        var ws   = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+        // Gui rows len GAS de xu ly
+        apiGet({
+          action: 'getTicketReport',
+          weekName: weekName,
+          rows: JSON.stringify(rows),
+          exportDate: ticketFile.updated || ''
+        }, function(res3) {
+          if (!res3 || res3.error) {
+            document.getElementById('ticketTableBody').innerHTML =
+              '<tr><td colspan="5" style="text-align:center;color:#EF4444;padding:16px">' + (res3 && res3.error || 'Lỗi xử lý') + '</td></tr>';
+            return;
+          }
+          renderTicketReport(res3);
+        }, function(){
+          document.getElementById('ticketTableBody').innerHTML =
+            '<tr><td colspan="5" style="text-align:center;color:#EF4444;padding:16px">Lỗi kết nối GAS</td></tr>';
+        });
+      } catch(e) {
+        document.getElementById('ticketTableBody').innerHTML =
+          '<tr><td colspan="5" style="text-align:center;color:#EF4444;padding:16px">Lỗi parse file: ' + e.message + '</td></tr>';
+      }
+    }, function(){
+      document.getElementById('ticketTableBody').innerHTML =
+        '<tr><td colspan="5" style="text-align:center;color:#EF4444;padding:16px">Lỗi kết nối GAS</td></tr>';
+    });
+  }, function(){
     document.getElementById('ticketTableBody').innerHTML =
-      '<tr><td colspan="5" style="text-align:center;color:#EF4444;padding:16px">Không kết nối được GAS</td></tr>';
+      '<tr><td colspan="5" style="text-align:center;color:#EF4444;padding:16px">Không kết nối được</td></tr>';
   });
 }
 
