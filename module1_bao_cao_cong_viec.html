@@ -2290,22 +2290,32 @@ function uploadReportFile(input, fileType) {
   var reader = new FileReader();
   reader.onload = function(e) {
     var base64 = e.target.result.split(',')[1];
-    apiGet({
-      action:   'uploadReportFile',
-      weekName: curWeek,
-      fileType: fileType,
-      fileName: file.name,
-      fileData: base64,
-      mimeType: file.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    }, function(res) {
+    // Dung POST vi base64 qua lon cho GET
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        action:   'uploadReportFile',
+        weekName: curWeek,
+        fileType: fileType,
+        fileName: file.name,
+        fileData: base64,
+        mimeType: file.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      })
+    }).then(function(r){ return r.text(); }).then(function(t){
+      var res;
+      try { res = JSON.parse(t.replace(/^[^(]+\(/, '').replace(/\)$/, '')); }
+      catch(e) { res = { error: t }; }
+      (function(res) {
       if (res && res.success) {
         status.innerHTML = '<span style="color:#10B981">✅ Upload thành công: ' + res.fileName + '</span>';
-        loadSec4WeekFiles(); // Refresh danh sach
+        loadSec4WeekFiles();
         if (fileType === 'ticket') loadTicketReport(curWeek);
       } else {
         status.innerHTML = '<span style="color:#EF4444">❌ Lỗi: ' + (res && res.error || 'Unknown') + '</span>';
       }
-    }, function() {
+      })(res);
+    }).catch(function() {
       status.innerHTML = '<span style="color:#EF4444">❌ Không kết nối được</span>';
     });
   };
