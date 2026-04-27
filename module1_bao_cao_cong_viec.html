@@ -621,39 +621,16 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
 
     <!-- ══ MỤC 4: VẬN HÀNH ══ -->
     <div id="sec4" class="rpt-section">
-      <div class="rpt-section-title">⚙️ Báo cáo vận hành</div>
+      <!-- Header voi nut upload -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div class="rpt-section-title" style="margin:0">⚙️ Báo cáo vận hành</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <label for="uploadTicket" style="cursor:pointer;background:var(--primary);color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
+            🎫 Upload Ticket
+          </label>
+          <input type="file" id="uploadTicket" accept=".xlsx,.xls" style="display:none" onchange="uploadReportFile(this,'ticket')">
 
-      <!-- FILES TRONG FOLDER TUAN -->
-      <div class="section-block" style="margin-bottom:16px">
-        <div class="section-block-title" style="display:flex;align-items:center;justify-content:space-between">
-          <span>📁 File báo cáo tuần này</span>
-          <span id="sec4WeekLabel" style="font-size:12px;color:var(--text2);font-weight:400"></span>
-        </div>
-        <div style="padding:16px 20px">
-          <!-- Upload buttons -->
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-            <label for="uploadTicket" style="cursor:pointer;background:var(--primary);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600">
-              🎫 Upload Ticket
-            </label>
-            <input type="file" id="uploadTicket" accept=".xlsx,.xls" style="display:none" onchange="uploadReportFile(this,'ticket')">
-
-            <label for="uploadEDC" style="cursor:pointer;background:#F59E0B;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600">
-              ⚠️ Upload Lỗi EDC
-            </label>
-            <input type="file" id="uploadEDC" accept=".xlsx,.xls" style="display:none" onchange="uploadReportFile(this,'edc')">
-
-            <label for="uploadVanHanh" style="cursor:pointer;background:#10B981;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600">
-              ⚙️ Upload Vận hành
-            </label>
-            <input type="file" id="uploadVanHanh" accept=".xlsx,.xls" style="display:none" onchange="uploadReportFile(this,'vanhanh')">
-          </div>
-
-          <!-- Danh sach file da co -->
-          <div id="weekFilesList">
-            <div style="color:var(--text2);font-size:13px">Chọn tuần để xem file đã upload...</div>
-          </div>
-
-          <div id="uploadStatus" style="margin-top:10px;font-size:13px;display:none"></div>
+          <span id="uploadStatus" style="font-size:12px;display:none"></span>
         </div>
       </div>
 
@@ -677,6 +654,11 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
           </table>
         </div>
         <div style="padding:8px 20px 12px;font-size:11px;color:var(--text2)" id="ticketExportDate"></div>
+      </div>
+
+      <!-- Placeholder khi chua co data -->
+      <div id="ticketPlaceholderSec4" style="display:none;padding:32px;text-align:center;color:var(--text2);font-size:13px">
+        Chưa có báo cáo ticket cho tuần này — bấm <b>🎫 Upload Ticket</b> để bắt đầu
       </div>
 
     </div>
@@ -1008,7 +990,9 @@ function switchWeek(name) {
     var _ws = document.getElementById('weekSel'); if(_ws) _ws.value = curWeek || ''; return;
   }
   curWeek = name;
-  // Neu dang o sec4, reload files
+  // Xoa cache ticket khi doi tuan
+  _ticketCache = {};
+  // Neu dang o sec4, reload
   var activeSec = document.querySelector('.rpt-section.active');
   if (activeSec && activeSec.id === 'sec4') {
     setTimeout(loadSec4WeekFiles, 100);
@@ -2204,24 +2188,8 @@ function pushTicketToSheet() {
 function loadSec4WeekFiles() {
   var week = curWeek;
   if (!week) return;
-  document.getElementById('sec4WeekLabel').textContent = week;
-  document.getElementById('weekFilesList').innerHTML =
-    '<div style="color:var(--text2);font-size:13px">⏳ Đang tải danh sách file...</div>';
-
-  apiGet({ action:'listWeekFiles', weekName: week }, function(res) {
-    if (!res || res.error) {
-      document.getElementById('weekFilesList').innerHTML =
-        '<div style="color:#EF4444;font-size:13px">Lỗi: ' + (res && res.error || 'Không kết nối được') + '</div>';
-      return;
-    }
-    renderWeekFiles(res.files || []);
-    // Auto load ticket nếu có
-    var ticketFile = (res.files || []).find(function(f){ return f.type === 'ticket'; });
-    if (ticketFile) loadTicketReport(week);
-  }, function() {
-    document.getElementById('weekFilesList').innerHTML =
-      '<div style="color:#EF4444;font-size:13px">Không kết nối được GAS</div>';
-  });
+  // Load ticket report (tu Sheet cache hoac hien placeholder)
+  loadTicketReport(week);
 }
 
 function renderWeekFiles(files) {
@@ -2246,6 +2214,12 @@ function renderWeekFiles(files) {
 function uploadReportFile(input, fileType) {
   var file = input.files[0];
   if (!file || !curWeek) { alert('Vui lòng chọn tuần trước khi upload'); return; }
+  // Kiem tra dang nhap Google
+  if (!authUser || !authUser.email) {
+    alert('Vui lòng đăng nhập bằng Google trước khi upload file!');
+    input.value = '';
+    return;
+  }
   var status = document.getElementById('uploadStatus');
   status.style.display = 'block';
   status.innerHTML = '<span style="color:var(--primary)">⏳ Đang đọc ' + file.name + '...</span>';
@@ -2332,9 +2306,9 @@ function loadTicketReport(weekName) {
     '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px">⏳ Đang tải báo cáo ticket...</td></tr>';
   apiGet({ action:'getTicketReport', weekName: weekName }, function(res) {
     if (!res || res.error) {
-      document.getElementById('ticketTableBody').innerHTML =
-        '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px">' +
-        '📂 ' + (res && res.error || 'Upload file ticket để xem báo cáo') + '</td></tr>';
+      document.getElementById('ticketBlock').style.display = 'none';
+      var ph = document.getElementById('ticketPlaceholderSec4');
+      if (ph) { ph.style.display = 'block'; }
       return;
     }
     _ticketCache[weekName] = res;
