@@ -656,6 +656,33 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
         <div style="padding:8px 20px 12px;font-size:11px;color:var(--text2)" id="ticketExportDate"></div>
       </div>
 
+      <!-- BANG TICKET TON -->
+      <div class="section-block" id="ticketPendingBlock" style="display:none;margin-bottom:16px">
+        <div class="section-block-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span>⏳ Danh sách Ticket chưa hoàn thành</span>
+          <button id="saveNotesBtn" onclick="saveTicketNotes()" style="background:#5B47E0;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:none">
+            💾 Lưu ghi chú
+          </button>
+        </div>
+        <div class="tbl-scroll" style="padding:0">
+          <table class="tbl" id="ticketPendingTable">
+            <thead>
+              <tr>
+                <th style="width:100px">Mã</th>
+                <th style="width:100px">Trạng thái</th>
+                <th style="width:160px">Tiêu đề</th>
+                <th style="width:200px">Nội dung</th>
+                <th style="width:200px">Bình luận</th>
+                <th style="width:130px">Quy trình</th>
+                <th style="width:160px">Ghi chú</th>
+                <th style="width:70px;text-align:center">Xử lý</th>
+              </tr>
+            </thead>
+            <tbody id="ticketPendingBody"></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Placeholder khi chua co data -->
       <div id="ticketPlaceholderSec4" style="display:none;padding:32px;text-align:center;color:var(--text2);font-size:13px">
         Chưa có báo cáo ticket cho tuần này — bấm <b>🎫 Upload Ticket</b> để bắt đầu
@@ -2400,6 +2427,16 @@ function _renderTicketFromRes(res) {
     + '</tr>';
 
   document.getElementById('ticketExportDate').textContent = res.exportDate || '';
+
+  // Load ghi chu roi render pending
+  var pending = res.pendingTickets || [];
+  if (pending.length > 0) {
+    loadTicketNotes(curWeek || '', function() {
+      renderPendingTickets(pending);
+    });
+  } else {
+    document.getElementById('ticketPendingBlock').style.display = 'none';
+  }
 }
 
 function fmtSecs(secs) {
@@ -2413,6 +2450,92 @@ function fmtSecs(secs) {
 }
 
 // sec4 auto-load handled inline
+
+
+// ============================================================
+//  PENDING TICKETS TABLE
+// ============================================================
+var _ticketNotes = {};  // {ma: {ghiChu, daXuLy}}
+var _pendingTickets = [];
+
+function renderPendingTickets(tickets) {
+  _pendingTickets = tickets || [];
+  var block = document.getElementById('ticketPendingBlock');
+  var tbody = document.getElementById('ticketPendingBody');
+  if (!tickets || !tickets.length) {
+    block.style.display = 'none'; return;
+  }
+  block.style.display = 'block';
+  document.getElementById('saveNotesBtn').style.display = 'inline-block';
+
+  var html = '';
+  tickets.forEach(function(t) {
+    var note  = (_ticketNotes[t.ma] || {}).ghiChu || '';
+    var done  = (_ticketNotes[t.ma] || {}).daXuLy || false;
+    html += '<tr id="prow-' + t.ma + '">'
+      + '<td style="font-weight:600;color:var(--primary);font-size:12px">' + t.ma + '</td>'
+      + '<td style="font-size:12px">' + (t.trangThai||'') + '</td>'
+      + '<td style="font-size:12px">' + (t.tieude||'') + '</td>'
+      + '<td style="font-size:12px;color:var(--text2)">' + (t.noidung||'') + '</td>'
+      + '<td style="font-size:12px;color:var(--text2)">' + (t.binhluan||'') + '</td>'
+      + '<td style="font-size:12px">' + (t.quyTrinh||'') + '</td>'
+      + '<td><input type="text" value="' + note.replace(/"/g,'&quot;') + '" '
+      + '  onchange="_noteChanged('' + t.ma + '',this.value)" '
+      + '  style="width:100%;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;background:var(--bg);color:var(--text);font-family:inherit">'
+      + '</td>'
+      + '<td style="text-align:center">'
+      + '<div onclick="_toggleDone('' + t.ma + '')" style="cursor:pointer;width:28px;height:28px;border-radius:6px;border:2px solid ' + (done?'#10B981':'var(--border)') + ';background:' + (done?'#10B981':'transparent') + ';display:flex;align-items:center;justify-content:center;margin:0 auto;transition:all .15s" id="chk-' + t.ma + '">'
+      + (done ? '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7L5.5 10L11.5 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '')
+      + '</div></td>'
+      + '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+function _noteChanged(ma, val) {
+  if (!_ticketNotes[ma]) _ticketNotes[ma] = {};
+  _ticketNotes[ma].ghiChu = val;
+}
+
+function _toggleDone(ma) {
+  if (!_ticketNotes[ma]) _ticketNotes[ma] = {};
+  _ticketNotes[ma].daXuLy = !_ticketNotes[ma].daXuLy;
+  var done = _ticketNotes[ma].daXuLy;
+  var el   = document.getElementById('chk-' + ma);
+  if (el) {
+    el.style.borderColor  = done ? '#10B981' : 'var(--border)';
+    el.style.background   = done ? '#10B981' : 'transparent';
+    el.innerHTML = done
+      ? '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7L5.5 10L11.5 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '';
+  }
+}
+
+function saveTicketNotes() {
+  var btn = document.getElementById('saveNotesBtn');
+  btn.textContent = '⏳ Đang lưu...'; btn.disabled = true;
+  apiGet({
+    action: 'saveTicketNotes',
+    weekName: curWeek || '',
+    notes: JSON.stringify(_ticketNotes)
+  }, function(res) {
+    btn.disabled = false;
+    if (res && res.success) {
+      btn.textContent = '✅ Đã lưu!';
+      setTimeout(function(){ btn.textContent = '💾 Lưu ghi chú'; }, 2000);
+    } else {
+      btn.textContent = '❌ Lỗi!';
+      setTimeout(function(){ btn.textContent = '💾 Lưu ghi chú'; }, 2000);
+    }
+  }, function(){ btn.disabled = false; btn.textContent = '❌ Lỗi kết nối'; });
+}
+
+function loadTicketNotes(weekName, callback) {
+  apiGet({ action:'getTicketNotes', weekName: weekName }, function(res) {
+    _ticketNotes = (res && res.notes) ? res.notes : {};
+    if (callback) callback();
+  }, function(){ if (callback) callback(); });
+}
 
 </script>
 </body>
