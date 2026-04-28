@@ -460,9 +460,9 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
           <button class="btn btn-primary btn-sm" id="btnSave" onclick="saveData()" disabled>☁ Lưu lên Sheets</button>
         </div>
       </div>
-      <div class="tbl-scroll">
+      <div class="tbl-scroll" style="max-height:calc(100vh - 320px);overflow-y:auto;overflow-x:auto" id="taskTableScroll">
         <table>
-          <thead><tr>
+          <thead style="position:sticky;top:0;z-index:2;background:#fff"><tr>
             <th style="width:32px">#</th>
             <th style="width:100px;text-align:left">Phân hệ</th>
             <th style="width:140px;text-align:left">Tính năng / Màn hình</th>
@@ -1263,8 +1263,12 @@ function addRow() {
   rows.push({ph:'',tn:'',mt:'',pri:'P2',tg:'',ngay:'',ts:'Chua co timeline',gc:''});
   mark(); renderTable();
   setTimeout(function(){
-    var tb=document.getElementById('tBody');
-    if(tb.lastElementChild) tb.lastElementChild.scrollIntoView({behavior:'smooth',block:'center'});
+    var container = document.getElementById('taskTableScroll');
+    if(container) container.scrollTop = container.scrollHeight;
+    else {
+      var tb=document.getElementById('tBody');
+      if(tb.lastElementChild) tb.lastElementChild.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }
   },60);
 }
 
