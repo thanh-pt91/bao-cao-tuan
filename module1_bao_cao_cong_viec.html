@@ -641,11 +641,11 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
         <button class="vanhanh-tab" onclick="switchVanHanhTab('thuhoi',this)">🔄 Báo cáo thu hồi</button>
         <button class="vanhanh-tab" onclick="switchVanHanhTab('tonkho',this)">📦 Báo cáo tồn kho giao máy</button>
         <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
-          <label for="uploadTicket" id="uploadTicketLabel" style="cursor:pointer;background:var(--primary);color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
+          <label for="uploadTicket" id="uploadTicketLabel" style="cursor:pointer;background:var(--primary);color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;opacity:0.4;pointer-events:none">
             🎫 Upload Ticket
           </label>
           <input type="file" id="uploadTicket" accept=".xlsx,.xls" style="display:none" onchange="uploadReportFile(this,'ticket')">
-          <button id="readDriveBtn" onclick="readTicketFromDrive()" style="background:#6366F1;color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">
+          <button id="readDriveBtn" onclick="readTicketFromDrive()" style="background:#6366F1;color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer" disabled>
             📂 Đọc từ Drive
           </button>
           <span id="uploadStatus" style="font-size:12px;display:none"></span>
@@ -715,9 +715,11 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
           <div class="section-block-title" style="display:flex;align-items:center;justify-content:space-between">
             <span>📧 Báo cáo Email tuần này</span>
             <div style="display:flex;gap:8px">
+              <button onclick="openConfigModal('email')" title="Cấu hình mặc định Email" style="background:rgba(91,71,224,0.08);color:var(--primary);border:1.5px solid var(--primary);padding:5px 11px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">⚙️ Cấu hình</button>
               <button onclick="addEmailRow()" style="background:var(--primary);color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">+ Thêm dòng</button>
-              <button onclick="saveEmailReport()" id="saveEmailBtn" style="background:#10B981;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">💾 Lưu lên Sheet</button>
+              <button onclick="saveEmailReport()" id="saveEmailBtn" style="background:#10B981;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer" disabled>💾 Lưu lên Sheet</button>
             </div>
+
           </div>
           <div class="tbl-scroll" style="padding:0">
             <table class="tbl" id="emailTable">
@@ -748,7 +750,7 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
             <span>⏳ Danh sách Email chưa hoàn thành</span>
             <div style="display:flex;gap:8px">
               <button onclick="addEmailPendingRow()" style="background:var(--primary);color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">+ Thêm</button>
-              <button onclick="saveEmailPending()" id="saveEmailPendingBtn" style="background:#10B981;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">💾 Lưu</button>
+              <button onclick="saveEmailPending()" id="saveEmailPendingBtn" style="background:#10B981;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer" disabled>💾 Lưu</button>
             </div>
           </div>
           <div class="tbl-scroll" style="padding:0">
@@ -770,8 +772,9 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
 
       <!-- PANEL: THU HOI -->
       <div class="vanhanh-panel" id="panel-thuhoi">
-        <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-          <button onclick="saveThuHoiReport()" id="saveThuHoiBtn" style="background:#10B981;color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">💾 Lưu tất cả</button>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px">
+          <button onclick="openConfigModal('thuhoi')" title="Cấu hình loại thiết bị" style="background:rgba(91,71,224,0.08);color:var(--primary);border:1.5px solid var(--primary);padding:7px 13px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">⚙️ Cấu hình</button>
+          <button onclick="saveThuHoiReport()" id="saveThuHoiBtn" style="background:#10B981;color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer" disabled>💾 Lưu tất cả</button>
         </div>
 
         <!-- LIEN HE THU HOI -->
@@ -829,8 +832,9 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
       <div class="vanhanh-panel" id="panel-tonkho">
 
         <div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px;align-items:center">
+          <button onclick="openConfigModal('tonkho')" title="Cấu hình loại tồn kho" style="background:rgba(91,71,224,0.08);color:var(--primary);border:1.5px solid var(--primary);padding:7px 13px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">⚙️ Cấu hình</button>
           <button onclick="addTonKhoRow()" style="background:var(--primary);color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">+ Thêm hàng</button>
-          <button onclick="saveTonKhoReport()" id="saveTonKhoBtn" style="background:#10B981;color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">💾 Lưu lên Sheet</button>
+          <button onclick="saveTonKhoReport()" id="saveTonKhoBtn" style="background:#10B981;color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer" disabled>💾 Lưu lên Sheet</button>
         </div>
 
         <div class="section-block">
@@ -900,6 +904,19 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
     <div class="modal-btns">
       <button class="btn btn-sm" onclick="closeLoginModal()">Đóng</button>
       <button class="btn btn-sm btn-primary" id="btnDoLogin" onclick="torogDoLogin()">🔐 Đăng nhập</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CẤU HÌNH MẶC ĐỊNH -->
+<div class="modal-backdrop" id="configModal">
+  <div class="modal" style="max-width:560px;max-height:85vh;display:flex;flex-direction:column">
+    <div class="modal-title" id="cfgModalTitle">⚙️ Cấu hình mặc định</div>
+    <div id="cfgModalBody" style="flex:1;overflow-y:auto;padding-right:4px;display:flex;flex-direction:column;gap:20px"></div>
+    <div id="cfgSaveStatus" style="min-height:22px;font-size:12px;padding:6px 0;color:var(--text2)"></div>
+    <div class="modal-btns">
+      <button class="btn btn-sm" onclick="closeConfigModal()">Đóng</button>
+      <button class="btn btn-sm btn-primary" id="btnSaveConfig" onclick="saveConfigDefaults()" disabled>💾 Lưu cấu hình</button>
     </div>
   </div>
 </div>
@@ -1671,6 +1688,15 @@ function signOut() {
   showToast('Đã đăng xuất', 'info');
 }
 
+function requireLogin(msg) {
+  if (authUser && authUser.email) return true;
+  showToast(msg || 'Vui lòng đăng nhập bằng Google trước!', 'err');
+  // Cuộn lên auth bar để user thấy nút đăng nhập
+  var bar = document.getElementById('authBar');
+  if (bar) bar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  return false;
+}
+
 function setEditorMode(on) {
   isEditor = on;
   var tbl = document.getElementById('tblCard');
@@ -1685,6 +1711,24 @@ function setEditorMode(on) {
     if (saveBar) saveBar.classList.add('tbl-readonly-btns');
     if (tblBar) tblBar.classList.add('tbl-readonly-btns');
   }
+
+  // Bật/tắt tất cả nút nhập liệu trong Mục 4 Vận hành
+  var vanHanhBtns = [
+    'saveEmailBtn','saveEmailPendingBtn','saveThuHoiBtn','saveTonKhoBtn','saveNotesBtn','btnSaveConfig'
+  ];
+  vanHanhBtns.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.disabled = !on;
+  });
+
+  // Nút upload/drive ticket
+  var uploadLbl = document.getElementById('uploadTicketLabel');
+  var driveBtn  = document.getElementById('readDriveBtn');
+  if (uploadLbl) { uploadLbl.style.opacity = on ? '1' : '0.4'; uploadLbl.style.pointerEvents = on ? '' : 'none'; }
+  if (driveBtn)  driveBtn.disabled = !on;
+
+  // Các nút Thêm dòng trong vận hành (không có id, dùng class hoặc xử lý trong hàm)
+  // -> Xử lý bằng requireLogin() bên trong từng hàm
 }
 
 
@@ -2713,6 +2757,7 @@ function _toggleDone(ma) {
 }
 
 function saveTicketNotes() {
+  if (!requireLogin("Vui lòng đăng nhập để lưu ghi chú Ticket!")) return;
   var btn = document.getElementById('saveNotesBtn');
   btn.textContent = '⏳ Đang lưu...'; btn.disabled = true;
   apiGet({
@@ -2866,6 +2911,7 @@ function _emailDelRow(i) {
 }
 
 function addEmailRow() {
+  if (!requireLogin("Vui lòng đăng nhập để thêm dòng!")) return;
   _emailRows.push({loai:'', daXuLy:0, chuaXuLy:0});
   _renderEmailRows();
   var tbody = document.getElementById('emailBody');
@@ -2880,6 +2926,7 @@ function _emailUpdateTotal() {
 }
 
 function saveEmailReport() {
+  if (!requireLogin("Vui lòng đăng nhập để lưu báo cáo Email!")) return;
   if (!curWeek) { alert('Vui lòng chọn tuần!'); return; }
   var btn = document.getElementById('saveEmailBtn');
   btn.textContent = '⏳ Đang lưu...'; btn.disabled = true;
@@ -2943,6 +2990,7 @@ function _epDel(el) {
 }
 
 function addEmailPendingRow() {
+  if (!requireLogin("Vui lòng đăng nhập để thêm dòng!")) return;
   _emailPendingRows.push({tieude:'', noidung:'', lydo:'', tinhTrang:'Đang xử lý'});
   _renderEmailPending();
   var tb = document.getElementById('emailPendingBody');
@@ -2950,6 +2998,7 @@ function addEmailPendingRow() {
 }
 
 function saveEmailPending() {
+  if (!requireLogin("Vui lòng đăng nhập để lưu Email Pending!")) return;
   if (!curWeek) { alert('Vui lòng chọn tuần!'); return; }
   var btn = document.getElementById('saveEmailPendingBtn');
   btn.textContent = '⏳ Đang lưu...'; btn.disabled = true;
@@ -3003,6 +3052,7 @@ function _lhChange(el) {
 }
 function _lhDel(el) { _lienHeRows.splice(+el.dataset.i,1); _renderLienHe(); }
 function addLienHeRow() {
+  if (!requireLogin("Vui lòng đăng nhập để thêm dòng!")) return;
   _lienHeRows.push({ngay:'', soLuong:0});
   _renderLienHe();
 }
@@ -3036,6 +3086,7 @@ function _tbChange(el) {
 }
 function _tbDel(el) { _thietBiRows.splice(+el.dataset.i,1); _renderThietBi(); }
 function addThietBiRow() {
+  if (!requireLogin("Vui lòng đăng nhập để thêm dòng!")) return;
   _thietBiRows.push({loai: THIETBI_TYPES[0], soLuong:0});
   _renderThietBi();
 }
@@ -3052,6 +3103,7 @@ function _dateToInput(str) {
 }
 
 function saveThuHoiReport() {
+  if (!requireLogin("Vui lòng đăng nhập để lưu báo cáo Thu hồi!")) return;
   if (!curWeek) { alert('Vui lòng chọn tuần!'); return; }
   var btn = document.getElementById('saveThuHoiBtn');
   btn.textContent='⏳ Đang lưu...'; btn.disabled=true;
@@ -3154,6 +3206,7 @@ function _tkDel(el) {
 }
 
 function addTonKhoRow() {
+  if (!requireLogin("Vui lòng đăng nhập để thêm dòng!")) return;
   _tonKhoRows.push({ loai: '', tuanTruoc: '', tuanNay: '' });
   _renderTonKho();
   var tb = document.getElementById('tonKhoBody');
@@ -3171,6 +3224,7 @@ function _updateTonKhoTotal() {
 }
 
 function saveTonKhoReport() {
+  if (!requireLogin("Vui lòng đăng nhập để lưu báo cáo Tồn kho!")) return;
   if (!curWeek) { alert('Vui lòng chọn tuần!'); return; }
   var btn = document.getElementById('saveTonKhoBtn');
   btn.textContent = '⏳ Đang lưu...'; btn.disabled = true;
@@ -3194,6 +3248,205 @@ function saveTonKhoReport() {
     setTimeout(function(){ btn.textContent = '💾 Lưu lên Sheet'; }, 2500);
   });
 }
+
+// ============================================================
+//  CẤU HÌNH MẶC ĐỊNH — Hệ thống động theo tab
+// ============================================================
+
+// Định nghĩa các section config cho từng tab
+// key: ConfigKey trong GAS _Config sheet
+// label: tiêu đề hiển thị
+// defaults: giá trị mặc định nếu chưa có trong sheet
+// varRef: tên biến JS cần cập nhật ngay sau khi lưu (để áp dụng luôn trong session)
+// note: ghi chú hiển thị trong modal
+var CFG_SCHEMA = {
+  email: {
+    title: '📧 Cấu hình Email',
+    note: 'Loại Email mặc định sẽ được tạo khi tạo tuần mới. Tình trạng là danh sách dropdown trong bảng Email Pending.',
+    sections: [
+      {
+        key: 'email_default',
+        label: '📋 Loại Email mặc định',
+        defaults: ['Thay đổi thông tin','Tồn đọng','File khách hàng mới','Thu hồi','Báo lỗi thiết bị','Setup HN - KPSC','Đền bù','Thay đổi thông tin','Kiểm tra thông tin'],
+        varName: 'EMAIL_DEFAULTS'
+      },
+      {
+        key: 'email_tinh_trang',
+        label: '🔖 Tình trạng Email Pending',
+        defaults: ['Đang xử lý','Chờ phản hồi','Hoàn thành'],
+        varName: 'EMAIL_TINH_TRANG'
+      }
+    ]
+  },
+  thuhoi: {
+    title: '🔄 Cấu hình Thu hồi',
+    note: 'Danh sách loại thiết bị sẽ hiển thị trong dropdown cột "Loại" ở bảng Thiết bị thu hồi.',
+    sections: [
+      {
+        key: 'thietbi_types',
+        label: '📦 Loại thiết bị thu hồi',
+        defaults: ['TPBank Hà Nội gửi','TPBank HCM gửi','KTR thu hồi','Khách gửi về','ĐVKD gửi về','Khác'],
+        varName: 'THIETBI_TYPES'
+      }
+    ]
+  },
+  tonkho: {
+    title: '📦 Cấu hình Tồn kho',
+    note: 'Danh sách loại tồn kho sẽ được tự động tạo mỗi tuần mới, kèm carry-over số liệu từ tuần trước.',
+    sections: [
+      {
+        key: 'tonkho_default',
+        label: '📋 Loại tồn kho mặc định',
+        defaults: ['Bưu cục chưa trả BB','Bưu cục báo trả rồi KTR chưa thấy nhận','Chung biên bản đóng thiếu','Không đẩy lên file để đối soát với Viettel','Không sử dụng dịch vụ báo phát','Không thấy có đơn','Máy trống','Thấy đã trả và nhận biên bản rồi nhưng chưa thấy đóng'],
+        varName: 'TONKHO_DEFAULTS'
+      }
+    ]
+  }
+};
+
+// Cache giá trị đã tải: { 'email_default': [...], 'email_tinh_trang': [...], ... }
+var _cfgCache   = {};
+var _cfgTabKey  = null; // tab đang mở config
+
+function openConfigModal(tabKey) {
+  if (!requireLogin("Vui lòng đăng nhập để thay đổi cấu hình!")) return;
+  var schema = CFG_SCHEMA[tabKey];
+  if (!schema) return;
+  _cfgTabKey = tabKey;
+
+  document.getElementById('cfgModalTitle').textContent = '⚙️ ' + schema.title.replace(/^[^\s]+\s/, '');
+  document.getElementById('cfgSaveStatus').textContent = '';
+  document.getElementById('configModal').classList.add('open');
+
+  // Render note + skeleton
+  var body = document.getElementById('cfgModalBody');
+  body.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:10px 14px;background:var(--primary-light);border-radius:8px;line-height:1.6">' + schema.note + '</div>'
+    + schema.sections.map(function(s) {
+        return '<div id="cfgSection_' + s.key + '">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+          + '<div style="font-size:13px;font-weight:700;color:var(--text)">' + s.label + '</div>'
+          + '<button onclick="_cfgAddRow(\'' + s.key + '\')" style="background:var(--primary);color:#fff;border:none;padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">+ Thêm</button>'
+          + '</div>'
+          + '<div id="cfgList_' + s.key + '" style="display:flex;flex-direction:column;gap:6px">'
+          + '<div style="color:var(--text2);font-size:12px;padding:8px">⏳ Đang tải...</div>'
+          + '</div></div>';
+      }).join('');
+
+  // Load từng section
+  schema.sections.forEach(function(s) {
+    if (_cfgCache[s.key] !== undefined) {
+      _cfgRenderList(s.key, _cfgCache[s.key]);
+    } else {
+      apiGet({ action: 'getConfig', key: s.key }, function(res) {
+        var vals = (res && res.values && res.values.length > 0) ? res.values : s.defaults.slice();
+        _cfgCache[s.key] = vals;
+        _cfgRenderList(s.key, vals);
+      }, function() {
+        _cfgCache[s.key] = s.defaults.slice();
+        _cfgRenderList(s.key, _cfgCache[s.key]);
+      });
+    }
+  });
+}
+
+function closeConfigModal() {
+  document.getElementById('configModal').classList.remove('open');
+}
+
+function _cfgRenderList(key, arr) {
+  var el = document.getElementById('cfgList_' + key);
+  if (!el) return;
+  el.innerHTML = arr.length === 0
+    ? '<div style="color:var(--text3);font-size:12px;padding:8px">Chưa có mục nào</div>'
+    : arr.map(function(val, i) {
+        var safe = (val || '').replace(/"/g, '&quot;');
+        return '<div style="display:flex;align-items:center;gap:8px">'
+          + '<div style="width:18px;text-align:center;color:var(--text3);font-size:11px;flex-shrink:0">' + (i+1) + '</div>'
+          + '<input type="text" value="' + safe + '" data-key="' + key + '" data-i="' + i + '" oninput="_cfgEdit(this)"'
+          + ' style="flex:1;border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;transition:border .15s"'
+          + ' onfocus="this.style.borderColor=\'var(--primary)\'" onblur="this.style.borderColor=\'var(--border)\'">'
+          + '<span data-key="' + key + '" data-i="' + i + '" onclick="_cfgDel(this)"'
+          + ' title="Xóa" style="cursor:pointer;color:#EF4444;font-size:18px;flex-shrink:0;line-height:1">×</span>'
+          + '</div>';
+      }).join('');
+}
+
+function _cfgEdit(el) {
+  var key = el.dataset.key, i = +el.dataset.i;
+  if (_cfgCache[key]) _cfgCache[key][i] = el.value;
+}
+
+function _cfgDel(el) {
+  var key = el.dataset.key, i = +el.dataset.i;
+  if (_cfgCache[key]) { _cfgCache[key].splice(i, 1); _cfgRenderList(key, _cfgCache[key]); }
+}
+
+function _cfgAddRow(key) {
+  if (!_cfgCache[key]) _cfgCache[key] = [];
+  _cfgCache[key].push('');
+  _cfgRenderList(key, _cfgCache[key]);
+  var listEl = document.getElementById('cfgList_' + key);
+  if (listEl && listEl.lastElementChild) {
+    var inp = listEl.lastElementChild.querySelector('input');
+    if (inp) { inp.focus(); listEl.lastElementChild.scrollIntoView({ behavior: 'smooth' }); }
+  }
+}
+
+function saveConfigDefaults() {
+  if (!requireLogin("Vui lòng đăng nhập để lưu cấu hình!")) return;
+  var schema = CFG_SCHEMA[_cfgTabKey];
+  if (!schema) return;
+  var btn = document.getElementById('btnSaveConfig');
+  var status = document.getElementById('cfgSaveStatus');
+  btn.disabled = true; btn.textContent = '⏳ Đang lưu...'; status.textContent = '';
+
+  var sections = schema.sections;
+  var done = 0, hasErr = false;
+
+  sections.forEach(function(s) {
+    var vals = (_cfgCache[s.key] || []).filter(function(v){ return (v||'').trim(); });
+    _cfgCache[s.key] = vals; // cập nhật cache sạch
+
+    apiGet({ action: 'saveConfig', key: s.key, values: JSON.stringify(vals) }, function(res) {
+      if (!res || res.error) hasErr = true;
+      else {
+        // Cập nhật biến JS trong session ngay lập tức
+        var globalVar = window[s.varName];
+        if (Array.isArray(globalVar)) {
+          globalVar.splice.apply(globalVar, [0, globalVar.length].concat(vals));
+        }
+        // Nếu là THIETBI_TYPES, re-render bảng thiết bị nếu đang mở
+        if (s.varName === 'THIETBI_TYPES' && typeof _renderThietBi === 'function') _renderThietBi();
+        // Nếu là EMAIL_TINH_TRANG, re-render pending nếu đang mở
+        if (s.varName === 'EMAIL_TINH_TRANG' && typeof _renderEmailPending === 'function') _renderEmailPending();
+        // Nếu là TONKHO_DEFAULTS, không cần re-render vì chỉ ảnh hưởng tuần mới
+        // Re-render list để đánh số lại
+        _cfgRenderList(s.key, vals);
+      }
+      if (++done >= sections.length) _cfgSaveDone(btn, status, hasErr, sections);
+    }, function() {
+      hasErr = true;
+      if (++done >= sections.length) _cfgSaveDone(btn, status, hasErr, sections);
+    });
+  });
+}
+
+function _cfgSaveDone(btn, status, hasErr, sections) {
+  btn.disabled = false;
+  if (hasErr) {
+    btn.textContent = '❌ Lỗi!';
+    status.style.color = '#EF4444';
+    status.textContent = '❌ Có lỗi khi lưu. Vui lòng thử lại.';
+  } else {
+    btn.textContent = '✅ Đã lưu!';
+    status.style.color = '#10B981';
+    var totalItems = sections.reduce(function(s, sec){ return s + (_cfgCache[sec.key]||[]).length; }, 0);
+    status.textContent = '✅ Đã lưu ' + totalItems + ' mục. Áp dụng ngay cho session này.';
+    showToast('Đã lưu cấu hình!', 'ok');
+  }
+  setTimeout(function(){ btn.textContent = '💾 Lưu cấu hình'; }, 3000);
+}
+
 
 </script>
 </body>
