@@ -3603,35 +3603,45 @@ function edcHandleFile(file) {
       }
 
       console.log('[EDC] Sheets:', wb.SheetNames);
-      var ws = wb.Sheets[wb.SheetNames[0]];
-      console.log('[EDC] Sheet ref:', ws['!ref']);
 
-      if (barEl) barEl.style.width = '60%';
-      if (msgEl) msgEl.textContent = 'Đang đọc dữ liệu...';
+      // Tìm sheet có chứa "Terminal ID" — không hardcode index 0
+      var ws = null, foundSheetName = '';
+      var rawArr = [], headerRowIdx = -1;
 
-      // Chuyển sang mảng 2D — dùng defval: null như module Ticket
-      var rawArr = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-      console.log('[EDC] Total rows (rawArr.length):', rawArr.length);
+      for (var si = 0; si < wb.SheetNames.length; si++) {
+        var candidateWs  = wb.Sheets[wb.SheetNames[si]];
+        var candidateRef = candidateWs['!ref'] || '';
+        console.log('[EDC] Sheet "' + wb.SheetNames[si] + '" ref:', candidateRef);
 
-      // Tìm hàng header thực chứa "Terminal ID"
-      var headerRowIdx = -1;
-      for (var hi = 0; hi < Math.min(rawArr.length, 10); hi++) {
-        var row = rawArr[hi];
-        if (!row) continue;
-        for (var ci0 = 0; ci0 < row.length; ci0++) {
-          if (String(row[ci0] || '').trim() === 'Terminal ID') {
-            headerRowIdx = hi; break;
+        var arr = XLSX.utils.sheet_to_json(candidateWs, { header: 1, defval: null });
+        // Tìm hàng header trong sheet này
+        var hIdx = -1;
+        for (var hi = 0; hi < Math.min(arr.length, 10); hi++) {
+          var row = arr[hi];
+          if (!row) continue;
+          for (var ci0 = 0; ci0 < row.length; ci0++) {
+            if (String(row[ci0] || '').trim() === 'Terminal ID') { hIdx = hi; break; }
+          }
+          if (hIdx >= 0) break;
+        }
+        console.log('[EDC] Sheet "' + wb.SheetNames[si] + '" rows:', arr.length, 'headerRowIdx:', hIdx);
+        if (hIdx >= 0 && arr.length > hIdx + 1) {
+          // Ưu tiên sheet có nhiều dòng dữ liệu nhất
+          if (rawArr.length === 0 || arr.length > rawArr.length) {
+            ws = candidateWs;
+            foundSheetName = wb.SheetNames[si];
+            rawArr = arr;
+            headerRowIdx = hIdx;
           }
         }
-        if (headerRowIdx >= 0) break;
       }
-      console.log('[EDC] headerRowIdx:', headerRowIdx);
 
-      if (headerRowIdx < 0) {
-        alert('Không tìm thấy cột "Terminal ID" trong file!\n\nFile có ' + rawArr.length + ' dòng.\nVui lòng kiểm tra đúng file EDC Event Tracking.');
+      if (headerRowIdx < 0 || !ws) {
+        alert('Không tìm thấy cột "Terminal ID" trong bất kỳ sheet nào!\n\nCác sheet: ' + wb.SheetNames.join(', ') + '\n\nVui lòng kiểm tra đúng file EDC Event Tracking.');
         if (progressEl) progressEl.style.display = 'none';
         return;
       }
+      console.log('[EDC] Đọc sheet:', foundSheetName, '| Total rows:', rawArr.length, '| headerRowIdx:', headerRowIdx);
 
       var headers   = rawArr[headerRowIdx];
       var colTerm   = -1, colSerial = -1;
