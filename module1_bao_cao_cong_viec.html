@@ -3643,6 +3643,40 @@ function edcHandleFile(file) {
       }
       console.log('[EDC] Đọc sheet:', foundSheetName, '| Total rows:', rawArr.length, '| headerRowIdx:', headerRowIdx);
 
+      // ── FIX: !ref có thể bị sai (dimension attribute trong xml sai) ──
+      // XLSX.js đã parse đủ cells nhưng sheet_to_json giới hạn theo !ref
+      // → Scan tất cả cell keys để tìm max row thực sự, rồi fix !ref
+      var wsToFix = wb.Sheets[foundSheetName];
+      var wsKeys  = Object.keys(wsToFix).filter(function(k){ return k[0] !== '!'; });
+      var realMaxRow = 0, realMaxCol = 0;
+      wsKeys.forEach(function(k) {
+        try {
+          var addr = XLSX.utils.decode_cell(k);
+          if (addr.r > realMaxRow) realMaxRow = addr.r;
+          if (addr.c > realMaxCol) realMaxCol = addr.c;
+        } catch(e){}
+      });
+      var statedRange = XLSX.utils.decode_range(wsToFix['!ref'] || 'A1:A1');
+      if (realMaxRow > statedRange.e.r) {
+        var fixedRef = XLSX.utils.encode_range({ s: statedRange.s, e: { r: realMaxRow, c: realMaxCol } });
+        console.log('[EDC] !ref fix:', wsToFix['!ref'], '→', fixedRef);
+        wsToFix['!ref'] = fixedRef;
+        // Đọc lại với !ref đã sửa
+        rawArr = XLSX.utils.sheet_to_json(wsToFix, { header: 1, defval: null });
+        console.log('[EDC] Rows sau khi fix !ref:', rawArr.length);
+        // Tìm lại headerRowIdx
+        headerRowIdx = -1;
+        for (var hh = 0; hh < Math.min(rawArr.length, 10); hh++) {
+          var hrow = rawArr[hh]; if (!hrow) continue;
+          for (var hc = 0; hc < hrow.length; hc++) {
+            if (String(hrow[hc] || '').trim() === 'Terminal ID') { headerRowIdx = hh; break; }
+          }
+          if (headerRowIdx >= 0) break;
+        }
+        console.log('[EDC] headerRowIdx sau fix:', headerRowIdx);
+      }
+      // ──────────────────────────────────────────────────────────────────
+
       var headers   = rawArr[headerRowIdx];
       var colTerm   = -1, colSerial = -1;
       for (var ci = 0; ci < headers.length; ci++) {
