@@ -3552,51 +3552,102 @@ function edcHandleDrop(e) {
 function edcHandleFile(file) {
   if (!requireLogin("Vui lòng đăng nhập để upload file EDC!")) return;
   if (!file) return;
-  if (!curWeek) { showToast('Vui lòng chọn tuần trước!', 'err'); return; }
+  if (!curWeek) { alert('Vui lòng chọn tuần trước!'); return; }
+
+  // Kiểm tra XLSX library đã load chưa
+  if (typeof XLSX === 'undefined') {
+    alert('Thư viện XLSX chưa load xong. Vui lòng thử lại sau vài giây!');
+    return;
+  }
 
   var ext = file.name.split('.').pop().toLowerCase();
   if (ext !== 'xlsx' && ext !== 'xls') {
-    showToast('Vui lòng chọn file Excel (.xlsx)', 'err'); return;
+    alert('Vui lòng chọn file Excel (.xlsx)'); return;
   }
 
-  document.getElementById('edcParseProgress').style.display = 'block';
-  document.getElementById('edcParseMsg').textContent = 'Đang đọc file...';
-  document.getElementById('edcParseBar').style.width = '20%';
-  document.getElementById('edcUploadStatus').textContent = '⏳ Đang xử lý: ' + file.name;
+  // Hiển thị tiến trình
+  var progressEl = document.getElementById('edcParseProgress');
+  var msgEl      = document.getElementById('edcParseMsg');
+  var barEl      = document.getElementById('edcParseBar');
+  var statusEl   = document.getElementById('edcUploadStatus');
+  if (progressEl) progressEl.style.display = 'block';
+  if (msgEl)      msgEl.textContent = 'Đang đọc file: ' + file.name;
+  if (barEl)      barEl.style.width = '10%';
+  if (statusEl)   statusEl.textContent = '⏳ ' + file.name;
 
   var reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onerror = function() {
+    alert('Không thể đọc file. Vui lòng thử lại!');
+    if (progressEl) progressEl.style.display = 'none';
+    if (statusEl)   statusEl.textContent = '❌ Lỗi đọc file';
+  };
+  reader.onload = function(evt) {
     try {
-      document.getElementById('edcParseBar').style.width = '50%';
-      document.getElementById('edcParseMsg').textContent = 'Đang phân tích dữ liệu...';
+      if (barEl) barEl.style.width = '40%';
+      if (msgEl) msgEl.textContent = 'Đang parse Excel...';
 
-      var data = new Uint8Array(e.target.result);
-      var wb   = XLSX.read(data, { type: 'array' });
-      var ws   = wb.Sheets[wb.SheetNames[0]];
-
-      // File có 2 dòng header phụ ở đầu — tìm hàng header thực (có cột "Terminal ID")
-      var rawArr = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-      var headerRowIdx = -1;
-      for (var hi = 0; hi < Math.min(rawArr.length, 6); hi++) {
-        if (rawArr[hi].indexOf('Terminal ID') >= 0) { headerRowIdx = hi; break; }
+      var data = new Uint8Array(evt.target.result);
+      var wb;
+      try {
+        wb = XLSX.read(data, { type: 'array', sheetStubs: true });
+      } catch(xlsxErr) {
+        alert('Lỗi đọc Excel: ' + xlsxErr.message);
+        if (progressEl) progressEl.style.display = 'none';
+        if (statusEl)   statusEl.textContent = '❌ Lỗi parse Excel';
+        return;
       }
-      if (headerRowIdx < 0) { showToast('Không tìm thấy cột Terminal ID trong file!', 'err'); return; }
 
-      var headers  = rawArr[headerRowIdx];
-      var colTerm  = headers.indexOf('Terminal ID');
-      var colSerial = headers.indexOf('Serial thiết bị');
+      if (!wb.SheetNames || wb.SheetNames.length === 0) {
+        alert('File Excel không có sheet nào!'); return;
+      }
+      var ws = wb.Sheets[wb.SheetNames[0]];
 
-      document.getElementById('edcParseBar').style.width = '75%';
+      if (barEl) barEl.style.width = '60%';
+      if (msgEl) msgEl.textContent = 'Đang đọc dữ liệu...';
 
-      var tongLoi      = 0;
-      var terminals    = {};
-      var thietBis     = {};
+      // Chuyển sang mảng 2D để tìm header
+      var rawArr = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
+      // Tìm hàng header thực chứa "Terminal ID"
+      var headerRowIdx = -1;
+      for (var hi = 0; hi < Math.min(rawArr.length, 10); hi++) {
+        var rowStr = String(rawArr[hi].join('|'));
+        if (rowStr.indexOf('Terminal ID') >= 0) { headerRowIdx = hi; break; }
+      }
+      if (headerRowIdx < 0) {
+        alert('Không tìm thấy cột "Terminal ID" trong file!\nVui lòng kiểm tra đúng file EDC Event Tracking.');
+        if (progressEl) progressEl.style.display = 'none';
+        return;
+      }
+
+      var headers   = rawArr[headerRowIdx];
+      var colTerm   = -1, colSerial = -1;
+      for (var ci = 0; ci < headers.length; ci++) {
+        var h = String(headers[ci]).trim();
+        if (h === 'Terminal ID')    colTerm   = ci;
+        if (h === 'Serial thiết bị') colSerial = ci;
+      }
+
+      if (colTerm < 0 || colSerial < 0) {
+        alert('Thiếu cột bắt buộc:\n- Terminal ID: ' + (colTerm >= 0 ? 'OK' : 'THIẾU') +
+              '\n- Serial thiết bị: ' + (colSerial >= 0 ? 'OK' : 'THIẾU'));
+        if (progressEl) progressEl.style.display = 'none';
+        return;
+      }
+
+      if (barEl) barEl.style.width = '80%';
+      if (msgEl) msgEl.textContent = 'Đang đếm lỗi...';
+
+      var tongLoi = 0, terminals = {}, thietBis = {};
       for (var ri = headerRowIdx + 1; ri < rawArr.length; ri++) {
         var row = rawArr[ri];
-        if (!row || row.every(function(c){ return c === ''; })) continue;
+        // Bỏ qua dòng trống hoàn toàn
+        var hasVal = false;
+        for (var ci2 = 0; ci2 < row.length; ci2++) { if (row[ci2] !== '') { hasVal = true; break; } }
+        if (!hasVal) continue;
+
         tongLoi++;
-        var termId  = String(row[colTerm]  || '').trim();
+        var termId   = String(row[colTerm]   || '').trim();
         var serialId = String(row[colSerial] || '').trim();
         if (termId)   terminals[termId] = 1;
         if (serialId) thietBis[serialId] = 1;
@@ -3605,32 +3656,31 @@ function edcHandleFile(file) {
       var tongTerminal = Object.keys(terminals).length;
       var tongThietBi  = Object.keys(thietBis).length;
 
-      _edcCurrentData = {
-        tongLoi:      tongLoi,
-        tongTerminal: tongTerminal,
-        tongThietBi:  tongThietBi,
-        fileName:     file.name,
-        weekName:     curWeek
-      };
+      _edcCurrentData = { tongLoi: tongLoi, tongTerminal: tongTerminal,
+                          tongThietBi: tongThietBi, fileName: file.name, weekName: curWeek };
 
-      document.getElementById('edcParseBar').style.width = '100%';
-      document.getElementById('edcParseMsg').textContent = '✅ Đọc xong ' + tongLoi.toLocaleString() + ' bản ghi!';
-      document.getElementById('edcUploadStatus').textContent = '✅ ' + file.name;
+      if (barEl)    barEl.style.width = '100%';
+      if (msgEl)    msgEl.textContent = '✅ Đọc xong ' + tongLoi.toLocaleString() + ' bản ghi!';
+      if (statusEl) statusEl.textContent = '✅ ' + file.name;
 
-      // Update cards với số liệu hiện tại trước
+      // Hiển thị cards
       _edcSetCardValues(tongLoi, tongTerminal, tongThietBi);
-      document.getElementById('edcFileInfo').textContent = '📄 ' + file.name + '  |  Tuần: ' + curWeek;
-      document.getElementById('edcSummaryBlock').style.display = 'block';
+      var fileInfoEl = document.getElementById('edcFileInfo');
+      if (fileInfoEl) fileInfoEl.textContent = '📄 ' + file.name + '  |  Tuần: ' + curWeek +
+                       '  |  ' + tongLoi.toLocaleString() + ' bản ghi';
+      var summaryEl = document.getElementById('edcSummaryBlock');
+      if (summaryEl) summaryEl.style.display = 'block';
 
-      // Load previous để tính delta
+      // Tải tuần trước để tính delta
       _edcLoadPrevious(curWeek, tongLoi, tongTerminal, tongThietBi);
 
-      setTimeout(function(){ document.getElementById('edcParseProgress').style.display = 'none'; }, 1500);
+      setTimeout(function(){ if (progressEl) progressEl.style.display = 'none'; }, 2000);
 
     } catch(err) {
-      showToast('Lỗi đọc file: ' + err.message, 'err');
-      document.getElementById('edcUploadStatus').textContent = '❌ Lỗi đọc file';
-      console.error(err);
+      console.error('[EDC Parse Error]', err);
+      alert('Lỗi xử lý file EDC:\n' + (err.message || err));
+      if (progressEl) progressEl.style.display = 'none';
+      if (statusEl)   statusEl.textContent = '❌ Lỗi: ' + (err.message || '');
     }
   };
   reader.readAsArrayBuffer(file);
