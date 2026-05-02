@@ -681,6 +681,42 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
             </div>
           </div>
         </div>
+
+        <!-- Bảng tổng hợp lỗi theo dòng thiết bị -->
+        <div style="margin-top:24px" id="edcBreakdownWrap">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+            📋 Tổng hợp lỗi theo dòng thiết bị
+            <span id="edcBreakdownCount" style="font-size:11px;font-weight:400;color:var(--text2)"></span>
+          </div>
+          <div class="tbl-scroll" style="padding:0;max-height:480px;overflow-y:auto">
+            <table class="tbl" id="edcBreakdownTable">
+              <thead>
+                <tr>
+                  <th style="text-align:left;min-width:320px">MÃ LỖI</th>
+                  <th style="text-align:center;width:100px;color:#F59E0B">NAYAX</th>
+                  <th style="text-align:center;width:100px;color:#60A5FA">NEXGO</th>
+                  <th style="text-align:center;width:80px;color:#A78BFA">P1</th>
+                  <th style="text-align:center;width:80px;color:#F472B6">P2</th>
+                  <th style="text-align:center;width:80px;font-weight:700">TỔNG</th>
+                </tr>
+              </thead>
+              <tbody id="edcBreakdownBody">
+                <tr><td colspan="6" style="text-align:center;color:var(--text2);padding:20px">Chưa có dữ liệu</td></tr>
+              </tbody>
+              <tfoot id="edcBreakdownFoot" style="display:none">
+                <tr style="background:#E8F4FD;font-weight:700;border-top:2px solid #2d5a9e">
+                  <td style="padding:10px 14px;color:#1e3a5f">TỔNG CỘNG</td>
+                  <td style="text-align:center;color:#F59E0B" id="edcFtNAYAX"></td>
+                  <td style="text-align:center;color:#60A5FA" id="edcFtNEXGO"></td>
+                  <td style="text-align:center;color:#A78BFA" id="edcFtP1"></td>
+                  <td style="text-align:center;color:#F472B6" id="edcFtP2"></td>
+                  <td style="text-align:center;color:#1e3a5f;font-size:15px;font-weight:800" id="edcFtTOTAL"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
       </div>
 
     </div>
@@ -3666,13 +3702,15 @@ function edcHandleFile(file) {
       // ──────────────────────────────────────────────────────────────────
 
       var headers   = rawArr[headerRowIdx];
-      var colTerm   = -1, colSerial = -1;
+      var colTerm   = -1, colSerial = -1, colMaLoi = -1, colLoaiLoi = -1;
       for (var ci = 0; ci < headers.length; ci++) {
         var h = String(headers[ci] || '').trim();
-        if (h === 'Terminal ID')     colTerm   = ci;
-        if (h === 'Serial thiết bị') colSerial = ci;
+        if (h === 'Terminal ID')     colTerm    = ci;
+        if (h === 'Serial thiết bị') colSerial  = ci;
+        if (h === 'Mã lỗi')         colMaLoi   = ci;
+        if (h === 'Loại lỗi')       colLoaiLoi = ci;
       }
-      console.log('[EDC] colTerm:', colTerm, 'colSerial:', colSerial);
+      console.log('[EDC] colTerm:', colTerm, 'colSerial:', colSerial, 'colMaLoi:', colMaLoi, 'colLoaiLoi:', colLoaiLoi);
 
       if (colTerm < 0 || colSerial < 0) {
         alert('Thiếu cột bắt buộc:\n- Terminal ID: ' + (colTerm >= 0 ? 'OK (' + colTerm + ')' : 'THIẾU') +
@@ -3685,10 +3723,21 @@ function edcHandleFile(file) {
       if (msgEl) msgEl.textContent = 'Đang đếm lỗi...';
 
       var tongLoi = 0, terminals = {}, thietBis = {};
+      // errorMap: { 'maLoi|loaiLoi': { label, NAYAX, NEXGO, P1, P2, OTHER } }
+      var errorMap = {};
+
+      function _getDeviceType(serial) {
+        var s = String(serial || '').trim().toUpperCase();
+        if (s.indexOf('F20') === 0) return 'NAYAX';
+        if (s.indexOf('N82') === 0) return 'NEXGO';
+        if (s.indexOf('PE')  === 0) return 'P1';
+        if (s.indexOf('PB')  === 0) return 'P2';
+        return 'OTHER';
+      }
+
       for (var ri = headerRowIdx + 1; ri < rawArr.length; ri++) {
         var row = rawArr[ri];
         if (!row) continue;
-        // Bỏ qua dòng hoàn toàn trống
         var hasVal = false;
         for (var ci2 = 0; ci2 < row.length; ci2++) {
           if (row[ci2] !== null && row[ci2] !== undefined && row[ci2] !== '') { hasVal = true; break; }
@@ -3700,14 +3749,29 @@ function edcHandleFile(file) {
         var serialId = row[colSerial] != null ? String(row[colSerial]).trim() : '';
         if (termId)   terminals[termId] = 1;
         if (serialId) thietBis[serialId] = 1;
+
+        // Mã lỗi: nếu có thì dùng, nếu trống thì lấy Loại lỗi thay thế
+        var maLoi   = (colMaLoi   >= 0 && row[colMaLoi]   != null) ? String(row[colMaLoi]).trim()   : '';
+        var loaiLoi = (colLoaiLoi >= 0 && row[colLoaiLoi] != null) ? String(row[colLoaiLoi]).trim() : '';
+        var errorKey   = maLoi || loaiLoi || '(Không rõ)';  // key group
+
+        var devType = _getDeviceType(serialId);
+
+        if (!errorMap[errorKey]) {
+          errorMap[errorKey] = { NAYAX: 0, NEXGO: 0, P1: 0, P2: 0, OTHER: 0, TOTAL: 0 };
+        }
+        errorMap[errorKey][devType]++;
+        errorMap[errorKey].TOTAL++;
       }
-      console.log('[EDC] tongLoi:', tongLoi, 'terminals:', Object.keys(terminals).length, 'thietBis:', Object.keys(thietBis).length);
+      console.log('[EDC] tongLoi:', tongLoi, 'terminals:', Object.keys(terminals).length,
+                  'thietBis:', Object.keys(thietBis).length, 'errorTypes:', Object.keys(errorMap).length);
 
       var tongTerminal = Object.keys(terminals).length;
       var tongThietBi  = Object.keys(thietBis).length;
 
       _edcCurrentData = { tongLoi: tongLoi, tongTerminal: tongTerminal,
-                          tongThietBi: tongThietBi, fileName: file.name, weekName: curWeek };
+                          tongThietBi: tongThietBi, fileName: file.name,
+                          weekName: curWeek, errorMap: errorMap };
 
       if (barEl)    barEl.style.width = '100%';
       if (msgEl)    msgEl.textContent = '✅ Đọc xong ' + tongLoi.toLocaleString() + ' bản ghi!';
@@ -3717,6 +3781,7 @@ function edcHandleFile(file) {
       var placeholder = document.getElementById('edcPlaceholder');
       if (placeholder) placeholder.style.display = 'none';
       _edcSetCardValues(tongLoi, tongTerminal, tongThietBi);
+      _edcRenderBreakdown(errorMap);
       var fileInfoEl = document.getElementById('edcFileInfo');
       if (fileInfoEl) fileInfoEl.textContent = '📄 ' + file.name + '  |  Tuần: ' + curWeek +
                        '  |  ' + tongLoi.toLocaleString() + ' bản ghi';
@@ -3745,6 +3810,64 @@ function _edcLoadPrevious(weekName, curLoi, curTerm, curTB) {
     _edcRenderDelta('edcTongTerminalDelta', 'edcTongTerminalPrev', curTerm, prev ? prev.tongTerminal : null);
     _edcRenderDelta('edcTongThietBiDelta',  'edcTongThietBiPrev',  curTB,   prev ? prev.tongThietBi  : null);
   }, function() { /* Không có prev - bỏ qua */ });
+}
+
+function _edcRenderBreakdown(errorMap) {
+  var tbody = document.getElementById('edcBreakdownBody');
+  var tfoot = document.getElementById('edcBreakdownFoot');
+  var countEl = document.getElementById('edcBreakdownCount');
+  if (!tbody) return;
+
+  if (!errorMap || Object.keys(errorMap).length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:20px">Chưa có dữ liệu</td></tr>';
+    if (tfoot) tfoot.style.display = 'none';
+    return;
+  }
+
+  // Sort theo TOTAL giảm dần
+  var keys = Object.keys(errorMap).sort(function(a, b) {
+    return errorMap[b].TOTAL - errorMap[a].TOTAL;
+  });
+
+  // Tính tổng footer
+  var ftNAYAX = 0, ftNEXGO = 0, ftP1 = 0, ftP2 = 0, ftTOTAL = 0;
+
+  var rows = keys.map(function(k) {
+    var e = errorMap[k];
+    ftNAYAX += e.NAYAX; ftNEXGO += e.NEXGO; ftP1 += e.P1; ftP2 += e.P2; ftTOTAL += e.TOTAL;
+    // k là mã lỗi (hoặc loại lỗi nếu mã trống) — hiển thị trực tiếp
+    var keyHtml = '<span style="font-size:13px;font-weight:600;color:var(--text)">' + _escHtml(k) + '</span>';
+    function _cell(val, color) {
+      return val > 0
+        ? '<td style="text-align:center;font-weight:600;color:' + color + '">' + val.toLocaleString() + '</td>'
+        : '<td style="text-align:center;color:var(--text3)">—</td>';
+    }
+    return '<tr>'
+      + '<td style="padding:8px 14px">' + keyHtml + '</td>'
+      + _cell(e.NAYAX, '#D97706')
+      + _cell(e.NEXGO, '#2563EB')
+      + _cell(e.P1,    '#7C3AED')
+      + _cell(e.P2,    '#DB2777')
+      + '<td style="text-align:center;font-weight:700;font-size:13px">' + e.TOTAL.toLocaleString() + '</td>'
+      + '</tr>';
+  });
+
+  tbody.innerHTML = rows.join('');
+
+  // Footer totals
+  if (tfoot) {
+    tfoot.style.display = '';
+    document.getElementById('edcFtNAYAX').textContent  = ftNAYAX.toLocaleString();
+    document.getElementById('edcFtNEXGO').textContent  = ftNEXGO.toLocaleString();
+    document.getElementById('edcFtP1').textContent     = ftP1.toLocaleString();
+    document.getElementById('edcFtP2').textContent     = ftP2.toLocaleString();
+    document.getElementById('edcFtTOTAL').textContent  = ftTOTAL.toLocaleString();
+  }
+  if (countEl) countEl.textContent = '(' + keys.length + ' loại lỗi)';
+}
+
+function _escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function _edcSetCardValues(loi, term, tb) {
@@ -3782,6 +3905,22 @@ function edcSaveSummary() {
   if (!_edcCurrentData || !curWeek) { showToast('Chưa có dữ liệu để lưu!', 'err'); return; }
   var btn = document.getElementById('edcSaveBtn');
   btn.disabled = true; btn.textContent = '⏳ Đang lưu...';
+
+  var done = 0, hasErr = false;
+  function _checkDone() {
+    if (++done < 2) return;
+    btn.disabled = false;
+    if (hasErr) {
+      btn.textContent = '❌ Lỗi!';
+      showToast('Lỗi khi lưu dữ liệu EDC', 'err');
+    } else {
+      btn.textContent = '✅ Đã lưu!';
+      showToast('Đã lưu EDC tuần ' + curWeek, 'ok');
+    }
+    setTimeout(function(){ btn.textContent = '💾 Lưu lên Sheet'; btn.disabled = false; }, 2500);
+  }
+
+  // 1. Lưu summary (3 cards)
   apiGet({
     action:   'saveEdcSummary',
     weekName: curWeek,
@@ -3790,20 +3929,21 @@ function edcSaveSummary() {
       tongTerminal: _edcCurrentData.tongTerminal,
       tongThietBi:  _edcCurrentData.tongThietBi
     })
-  }, function(res) {
-    btn.disabled = false;
-    if (res && res.success) {
-      btn.textContent = '✅ Đã lưu!';
-      showToast('Đã lưu tổng hợp EDC tuần ' + curWeek, 'ok');
-    } else {
-      btn.textContent = '❌ Lỗi!';
-      showToast('Lỗi lưu: ' + (res && res.error || ''), 'err');
-    }
-    setTimeout(function(){ btn.textContent = '💾 Lưu lên Sheet'; btn.disabled = false; }, 2500);
-  }, function() {
-    btn.disabled = false; btn.textContent = '❌ Lỗi kết nối';
-    setTimeout(function(){ btn.textContent = '💾 Lưu lên Sheet'; }, 2500);
+  }, function(r){ if (!r || r.error) hasErr = true; _checkDone(); },
+     function(){ hasErr = true; _checkDone(); });
+
+  // 2. Lưu breakdown (bảng lỗi theo dòng máy)
+  var errorMap = _edcCurrentData.errorMap || {};
+  var breakdownRows = Object.keys(errorMap).map(function(k) {
+    var e = errorMap[k];
+    return { maLoi: k, NAYAX: e.NAYAX, NEXGO: e.NEXGO, P1: e.P1, P2: e.P2, TOTAL: e.TOTAL };
   });
+  apiGet({
+    action:   'saveEdcBreakdown',
+    weekName: curWeek,
+    rows:     JSON.stringify(breakdownRows)
+  }, function(r){ if (!r || r.error) hasErr = true; _checkDone(); },
+     function(){ hasErr = true; _checkDone(); });
 }
 
 // Reset EDC khi đổi tuần
@@ -3859,6 +3999,17 @@ function _edcLoadExisting(weekName) {
     _edcRenderDelta('edcTongLoiDelta',      'edcTongLoiPrev',      c.tongLoi,      p ? p.tongLoi      : null);
     _edcRenderDelta('edcTongTerminalDelta', 'edcTongTerminalPrev', c.tongTerminal, p ? p.tongTerminal : null);
     _edcRenderDelta('edcTongThietBiDelta',  'edcTongThietBiPrev',  c.tongThietBi,  p ? p.tongThietBi  : null);
+
+    // Load thêm breakdown
+    apiGet({ action: 'getEdcBreakdown', weekName: weekName }, function(bdRes) {
+      if (!bdRes || !bdRes.rows || bdRes.rows.length === 0) return;
+      // Chuyển rows array → errorMap object để dùng lại _edcRenderBreakdown
+      var errorMap = {};
+      bdRes.rows.forEach(function(r) {
+        errorMap[r.maLoi] = { NAYAX: r.NAYAX, NEXGO: r.NEXGO, P1: r.P1, P2: r.P2, OTHER: 0, TOTAL: r.TOTAL };
+      });
+      _edcRenderBreakdown(errorMap);
+    }, function(){});
   }, function() {
     var placeholder = document.getElementById('edcPlaceholder');
     if (placeholder) { placeholder.style.display = 'block'; placeholder.innerHTML = _noDataHtml; }
