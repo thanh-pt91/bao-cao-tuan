@@ -3754,6 +3754,10 @@ function edcHandleFile(file) {
         var maLoi   = (colMaLoi   >= 0 && row[colMaLoi]   != null) ? String(row[colMaLoi]).trim()   : '';
         var loaiLoi = (colLoaiLoi >= 0 && row[colLoaiLoi] != null) ? String(row[colLoaiLoi]).trim() : '';
         var errorKey   = maLoi || loaiLoi || '(Không rõ)';  // key group
+        // Normalize: cắt phần động trong ngoặc cuối chỉ khi chứa số hoặc dạng "key: value"
+        // VD: "Số tiền không hợp lệ! (amount: 5881000000)" → "Số tiền không hợp lệ!"
+        // Giữ nguyên: "Vui lòng chọn cách đọc thẻ khác (Chạm hoặc CHIP)"
+        errorKey = errorKey.replace(/\s*\([^)]*(?:\d{4,}|[\w]+:\s*\S+)[^)]*\)\s*$/, '').trim() || errorKey;
 
         var devType = _getDeviceType(serialId);
 
