@@ -689,19 +689,20 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
             <span id="edcBreakdownCount" style="font-size:11px;font-weight:400;color:var(--text2)"></span>
           </div>
           <div class="tbl-scroll" style="padding:0;max-height:480px;overflow-y:auto">
-            <table class="tbl" id="edcBreakdownTable">
-              <thead>
+            <table class="tbl" id="edcBreakdownTable" style="border-collapse:separate;border-spacing:0">
+              <thead style="position:sticky;top:0;z-index:3">
                 <tr>
-                  <th style="text-align:left;min-width:320px">MÃ LỖI</th>
-                  <th style="text-align:center;width:100px;color:#F59E0B">NAYAX</th>
-                  <th style="text-align:center;width:100px;color:#60A5FA">NEXGO</th>
-                  <th style="text-align:center;width:80px;color:#A78BFA">P1</th>
-                  <th style="text-align:center;width:80px;color:#F472B6">P2</th>
-                  <th style="text-align:center;width:80px;font-weight:700">TỔNG</th>
+                  <th style="text-align:left;min-width:320px;position:sticky;top:0">MÃ LỖI</th>
+                  <th style="text-align:center;width:100px;color:#F59E0B;position:sticky;top:0">NAYAX</th>
+                  <th style="text-align:center;width:100px;color:#60A5FA;position:sticky;top:0">NEXGO</th>
+                  <th style="text-align:center;width:80px;color:#A78BFA;position:sticky;top:0">P1</th>
+                  <th style="text-align:center;width:80px;color:#F472B6;position:sticky;top:0">P2</th>
+                  <th style="text-align:center;width:100px;font-weight:700;position:sticky;top:0">TỔNG</th>
+                  <th style="text-align:center;width:90px;color:var(--text2);font-weight:600;position:sticky;top:0">±% TUẦN</th>
                 </tr>
               </thead>
               <tbody id="edcBreakdownBody">
-                <tr><td colspan="6" style="text-align:center;color:var(--text2);padding:20px">Chưa có dữ liệu</td></tr>
+                <tr><td colspan="7" style="text-align:center;color:var(--text2);padding:20px">Chưa có dữ liệu</td></tr>
               </tbody>
               <tfoot id="edcBreakdownFoot" style="display:none">
                 <tr style="background:#E8F4FD;font-weight:700;border-top:2px solid #2d5a9e">
@@ -711,6 +712,7 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
                   <td style="text-align:center;color:#A78BFA" id="edcFtP1"></td>
                   <td style="text-align:center;color:#F472B6" id="edcFtP2"></td>
                   <td style="text-align:center;color:#1e3a5f;font-size:15px;font-weight:800" id="edcFtTOTAL"></td>
+                  <td id="edcFtDelta" style="text-align:center;font-size:12px;font-weight:700;padding:2px 8px"></td>
                 </tr>
               </tfoot>
             </table>
@@ -1311,6 +1313,7 @@ function switchWeek(name) {
   _tonKhoRows  = [];
   // Reset EDC
   if (typeof _edcReset === 'function') _edcReset();
+  _edcPrevMap = {};
   // Reset Email
   _emailRows        = typeof _emailRows        !== 'undefined' ? [] : _emailRows;
   _emailPendingRows = typeof _emailPendingRows !== 'undefined' ? [] : _emailPendingRows;
@@ -3754,10 +3757,11 @@ function edcHandleFile(file) {
         var maLoi   = (colMaLoi   >= 0 && row[colMaLoi]   != null) ? String(row[colMaLoi]).trim()   : '';
         var loaiLoi = (colLoaiLoi >= 0 && row[colLoaiLoi] != null) ? String(row[colLoaiLoi]).trim() : '';
         var errorKey   = maLoi || loaiLoi || '(Không rõ)';  // key group
-        // Normalize: cắt phần động trong ngoặc cuối chỉ khi chứa số hoặc dạng "key: value"
-        // VD: "Số tiền không hợp lệ! (amount: 5881000000)" → "Số tiền không hợp lệ!"
-        // Giữ nguyên: "Vui lòng chọn cách đọc thẻ khác (Chạm hoặc CHIP)"
-        errorKey = errorKey.replace(/\s*\([^)]*(?:\d{4,}|[\w]+:\s*\S+)[^)]*\)\s*$/, '').trim() || errorKey;
+        // Bước 1: Cắt phần động trong ngoặc cuối
+        // \S* (thay vì \S+) để bắt cả "(amount: )" khi value rỗng
+        errorKey = errorKey.replace(/\s*\([^)]*(?:\d{4,}|[\w]+:\s*\S*)[^)]*\)\s*$/, '').trim() || errorKey;
+        // Bước 2: Normalize dấu ! cuối → gom "Số tiền không hợp lệ" và "Số tiền không hợp lệ!" về cùng 1 key
+        errorKey = errorKey.replace(/!+\s*$/, '').trim() || errorKey;
 
         var devType = _getDeviceType(serialId);
 
@@ -3813,12 +3817,30 @@ function _edcLoadPrevious(weekName, curLoi, curTerm, curTB) {
     _edcRenderDelta('edcTongLoiDelta',      'edcTongLoiPrev',      curLoi,  prev ? prev.tongLoi      : null);
     _edcRenderDelta('edcTongTerminalDelta', 'edcTongTerminalPrev', curTerm, prev ? prev.tongTerminal : null);
     _edcRenderDelta('edcTongThietBiDelta',  'edcTongThietBiPrev',  curTB,   prev ? prev.tongThietBi  : null);
-  }, function() { /* Không có prev - bỏ qua */ });
+    // Load breakdown tuần trước để tính delta bảng
+    if (prev && prev.weekName) {
+      apiGet({ action: 'getEdcBreakdown', weekName: prev.weekName }, function(bdRes) {
+        _edcPrevMap = {};
+        if (bdRes && bdRes.rows) {
+          bdRes.rows.forEach(function(r) {
+            _edcPrevMap[r.maLoi] = { NAYAX: r.NAYAX, NEXGO: r.NEXGO, P1: r.P1, P2: r.P2, TOTAL: r.TOTAL };
+          });
+        }
+        // Re-render breakdown với prevMap vừa load
+        if (_edcCurrentData && _edcCurrentData.errorMap) {
+          _edcRenderBreakdown(_edcCurrentData.errorMap, _edcPrevMap);
+        }
+      }, function(){});
+    }
+  }, function() {});
 }
 
-function _edcRenderBreakdown(errorMap) {
-  var tbody = document.getElementById('edcBreakdownBody');
-  var tfoot = document.getElementById('edcBreakdownFoot');
+var _edcPrevMap = {}; // prevBreakdown để tính delta
+
+function _edcRenderBreakdown(errorMap, prevMap) {
+  prevMap = prevMap || _edcPrevMap || {};
+  var tbody   = document.getElementById('edcBreakdownBody');
+  var tfoot   = document.getElementById('edcBreakdownFoot');
   var countEl = document.getElementById('edcBreakdownCount');
   if (!tbody) return;
 
@@ -3833,19 +3855,31 @@ function _edcRenderBreakdown(errorMap) {
     return errorMap[b].TOTAL - errorMap[a].TOTAL;
   });
 
-  // Tính tổng footer
-  var ftNAYAX = 0, ftNEXGO = 0, ftP1 = 0, ftP2 = 0, ftTOTAL = 0;
+  var ftNAYAX = 0, ftNEXGO = 0, ftP1 = 0, ftP2 = 0, ftTOTAL = 0, ftPrevTotal = 0;
+
+  function _cell(val, color) {
+    return val > 0
+      ? '<td style="text-align:center;font-weight:600;color:' + color + '">' + val.toLocaleString() + '</td>'
+      : '<td style="text-align:center;color:var(--text3)">—</td>';
+  }
+
+  function _deltaHtml(cur, prev) {
+    if (!prev && prev !== 0) return '<td style="text-align:center;color:var(--text3);font-size:11px">—</td>';
+    if (prev === 0) return '<td style="text-align:center;color:var(--text3);font-size:11px">Mới</td>';
+    var pct  = ((cur - prev) / prev * 100).toFixed(1);
+    var up   = cur > prev, same = cur === prev;
+    var bg   = same ? 'transparent' : (up ? '#FEE2E2' : '#D1FAE5');
+    var color= same ? 'var(--text2)' : (up ? '#EF4444' : '#10B981');
+    var txt  = same ? '0%' : (up ? '▲ +' : '▼ ') + pct + '%';
+    return '<td style="text-align:center"><span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:12px;background:' + bg + ';color:' + color + '">' + txt + '</span></td>';
+  }
 
   var rows = keys.map(function(k) {
-    var e = errorMap[k];
+    var e    = errorMap[k];
+    var prev = prevMap[k] || null;
     ftNAYAX += e.NAYAX; ftNEXGO += e.NEXGO; ftP1 += e.P1; ftP2 += e.P2; ftTOTAL += e.TOTAL;
-    // k là mã lỗi (hoặc loại lỗi nếu mã trống) — hiển thị trực tiếp
+    if (prev) ftPrevTotal += prev.TOTAL;
     var keyHtml = '<span style="font-size:13px;font-weight:600;color:var(--text)">' + _escHtml(k) + '</span>';
-    function _cell(val, color) {
-      return val > 0
-        ? '<td style="text-align:center;font-weight:600;color:' + color + '">' + val.toLocaleString() + '</td>'
-        : '<td style="text-align:center;color:var(--text3)">—</td>';
-    }
     return '<tr>'
       + '<td style="padding:8px 14px">' + keyHtml + '</td>'
       + _cell(e.NAYAX, '#D97706')
@@ -3853,12 +3887,12 @@ function _edcRenderBreakdown(errorMap) {
       + _cell(e.P1,    '#7C3AED')
       + _cell(e.P2,    '#DB2777')
       + '<td style="text-align:center;font-weight:700;font-size:13px">' + e.TOTAL.toLocaleString() + '</td>'
+      + _deltaHtml(e.TOTAL, prev ? prev.TOTAL : null)
       + '</tr>';
   });
 
   tbody.innerHTML = rows.join('');
 
-  // Footer totals
   if (tfoot) {
     tfoot.style.display = '';
     document.getElementById('edcFtNAYAX').textContent  = ftNAYAX.toLocaleString();
@@ -3866,6 +3900,16 @@ function _edcRenderBreakdown(errorMap) {
     document.getElementById('edcFtP1').textContent     = ftP1.toLocaleString();
     document.getElementById('edcFtP2').textContent     = ftP2.toLocaleString();
     document.getElementById('edcFtTOTAL').textContent  = ftTOTAL.toLocaleString();
+    // Delta tổng cộng ở footer
+    var ftDeltaEl = document.getElementById('edcFtDelta');
+    if (ftDeltaEl && ftPrevTotal > 0) {
+      var pct  = ((ftTOTAL - ftPrevTotal) / ftPrevTotal * 100).toFixed(1);
+      var up   = ftTOTAL > ftPrevTotal, same = ftTOTAL === ftPrevTotal;
+      ftDeltaEl.textContent = same ? '0%' : (up ? '▲ +' : '▼ ') + pct + '%';
+      ftDeltaEl.style.color = same ? 'var(--text2)' : (up ? '#EF4444' : '#10B981');
+    } else if (ftDeltaEl) {
+      ftDeltaEl.textContent = '';
+    }
   }
   if (countEl) countEl.textContent = '(' + keys.length + ' loại lỗi)';
 }
@@ -4004,15 +4048,28 @@ function _edcLoadExisting(weekName) {
     _edcRenderDelta('edcTongTerminalDelta', 'edcTongTerminalPrev', c.tongTerminal, p ? p.tongTerminal : null);
     _edcRenderDelta('edcTongThietBiDelta',  'edcTongThietBiPrev',  c.tongThietBi,  p ? p.tongThietBi  : null);
 
-    // Load thêm breakdown
+    // Load breakdown tuần này + tuần trước để render delta
+    var prevWeekName = p ? p.weekName : null;
     apiGet({ action: 'getEdcBreakdown', weekName: weekName }, function(bdRes) {
-      if (!bdRes || !bdRes.rows || bdRes.rows.length === 0) return;
-      // Chuyển rows array → errorMap object để dùng lại _edcRenderBreakdown
-      var errorMap = {};
-      bdRes.rows.forEach(function(r) {
-        errorMap[r.maLoi] = { NAYAX: r.NAYAX, NEXGO: r.NEXGO, P1: r.P1, P2: r.P2, OTHER: 0, TOTAL: r.TOTAL };
-      });
-      _edcRenderBreakdown(errorMap);
+      var curMap = {};
+      if (bdRes && bdRes.rows) {
+        bdRes.rows.forEach(function(r) {
+          curMap[r.maLoi] = { NAYAX: r.NAYAX, NEXGO: r.NEXGO, P1: r.P1, P2: r.P2, OTHER: 0, TOTAL: r.TOTAL };
+        });
+      }
+      if (prevWeekName) {
+        apiGet({ action: 'getEdcBreakdown', weekName: prevWeekName }, function(pvRes) {
+          _edcPrevMap = {};
+          if (pvRes && pvRes.rows) {
+            pvRes.rows.forEach(function(r) {
+              _edcPrevMap[r.maLoi] = { NAYAX: r.NAYAX, NEXGO: r.NEXGO, P1: r.P1, P2: r.P2, TOTAL: r.TOTAL };
+            });
+          }
+          _edcRenderBreakdown(curMap, _edcPrevMap);
+        }, function(){ _edcRenderBreakdown(curMap, {}); });
+      } else {
+        _edcRenderBreakdown(curMap, {});
+      }
     }, function(){});
   }, function() {
     var placeholder = document.getElementById('edcPlaceholder');
