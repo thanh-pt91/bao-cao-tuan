@@ -3809,8 +3809,7 @@ function edcSaveSummary() {
 // Reset EDC khi đổi tuần
 function _edcReset() {
   _edcCurrentData = null;
-  var placeholder = document.getElementById('edcPlaceholder');
-  if (placeholder) placeholder.style.display = 'block';
+  // Ẩn cards
   var summaryEl = document.getElementById('edcSummaryBlock');
   if (summaryEl) summaryEl.style.display = 'none';
   var progressEl = document.getElementById('edcParseProgress');
@@ -3819,18 +3818,40 @@ function _edcReset() {
   if (statusEl) statusEl.textContent = '';
   var inp = document.getElementById('edcFileInput');
   if (inp) inp.value = '';
-  if (curWeek) _edcLoadExisting(curWeek);
+
+  // Hiển thị placeholder với trạng thái loading nếu có curWeek
+  var placeholder = document.getElementById('edcPlaceholder');
+  if (placeholder) {
+    if (curWeek) {
+      placeholder.style.display = 'block';
+      placeholder.innerHTML = '<div style="font-size:28px;margin-bottom:12px">⏳</div>'
+        + '<div style="font-size:13px;font-weight:600;color:var(--text2)">Đang tải dữ liệu tuần ' + curWeek + '...</div>';
+      _edcLoadExisting(curWeek);
+    } else {
+      placeholder.style.display = 'block';
+      placeholder.innerHTML = '<div style="font-size:40px;margin-bottom:12px">📊</div>'
+        + '<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">Chưa có dữ liệu</div>'
+        + '<div style="font-size:12px;color:var(--text2)">Upload file Excel (.xlsx) xuất từ hệ thống EDC Event Tracking để bắt đầu</div>';
+    }
+  }
 }
 
 function _edcLoadExisting(weekName) {
+  var _noDataHtml = '<div style="font-size:40px;margin-bottom:12px">📊</div>'
+    + '<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">Chưa có dữ liệu</div>'
+    + '<div style="font-size:12px;color:var(--text2)">Upload file Excel (.xlsx) xuất từ hệ thống EDC Event Tracking để bắt đầu</div>';
+
   apiGet({ action: 'getEdcSummary', weekName: weekName }, function(res) {
-    if (!res || !res.current) return;
+    var placeholder = document.getElementById('edcPlaceholder');
+    if (!res || !res.current) {
+      if (placeholder) { placeholder.style.display = 'block'; placeholder.innerHTML = _noDataHtml; }
+      return;
+    }
     var c = res.current, p = res.previous;
     _edcCurrentData = {
       tongLoi: c.tongLoi, tongTerminal: c.tongTerminal, tongThietBi: c.tongThietBi,
       weekName: weekName
     };
-    var placeholder = document.getElementById('edcPlaceholder');
     if (placeholder) placeholder.style.display = 'none';
     _edcSetCardValues(c.tongLoi, c.tongTerminal, c.tongThietBi);
     document.getElementById('edcFileInfo').textContent = '📊 Dữ liệu đã lưu  |  Tuần: ' + weekName;
@@ -3838,8 +3859,12 @@ function _edcLoadExisting(weekName) {
     _edcRenderDelta('edcTongLoiDelta',      'edcTongLoiPrev',      c.tongLoi,      p ? p.tongLoi      : null);
     _edcRenderDelta('edcTongTerminalDelta', 'edcTongTerminalPrev', c.tongTerminal, p ? p.tongTerminal : null);
     _edcRenderDelta('edcTongThietBiDelta',  'edcTongThietBiPrev',  c.tongThietBi,  p ? p.tongThietBi  : null);
-  }, function(){});
+  }, function() {
+    var placeholder = document.getElementById('edcPlaceholder');
+    if (placeholder) { placeholder.style.display = 'block'; placeholder.innerHTML = _noDataHtml; }
+  });
 }
+
 
 </script>
 </body>
