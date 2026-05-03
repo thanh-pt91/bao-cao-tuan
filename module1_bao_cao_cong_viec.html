@@ -684,9 +684,39 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
 
         <!-- Bảng tổng hợp lỗi theo dòng thiết bị -->
         <div style="margin-top:24px" id="edcBreakdownWrap">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px">
-            📋 Tổng hợp lỗi theo dòng thiết bị
-            <span id="edcBreakdownCount" style="font-size:11px;font-weight:400;color:var(--text2)"></span>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+            <div style="font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px">
+              📋 Tổng hợp lỗi theo dòng thiết bị
+              <span id="edcBreakdownCount" style="font-size:11px;font-weight:400;color:var(--text2)"></span>
+            </div>
+          </div>
+
+          <!-- Tab filter dòng thiết bị -->
+          <div id="edcDevTabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+            <button data-dev="ALL"   onclick="_edcSetTab(this)" class="edc-tab edc-tab-active"
+              style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:#1e3a5f;color:#fff">
+              Tất cả <span id="edcTabCntALL"  style="font-size:12px;opacity:.85"></span>
+            </button>
+            <button data-dev="NAYAX" onclick="_edcSetTab(this)" class="edc-tab"
+              style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;border:2px solid #F59E0B;cursor:pointer;font-size:13px;font-weight:600;background:transparent;color:#D97706">
+              <span style="width:8px;height:8px;border-radius:50%;background:#F59E0B;display:inline-block"></span>
+              Nayax <span id="edcTabCntNAYAX" style="font-size:12px"></span>
+            </button>
+            <button data-dev="NEXGO" onclick="_edcSetTab(this)" class="edc-tab"
+              style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;border:2px solid #60A5FA;cursor:pointer;font-size:13px;font-weight:600;background:transparent;color:#2563EB">
+              <span style="width:8px;height:8px;border-radius:50%;background:#60A5FA;display:inline-block"></span>
+              Nexgo <span id="edcTabCntNEXGO" style="font-size:12px"></span>
+            </button>
+            <button data-dev="P1"    onclick="_edcSetTab(this)" class="edc-tab"
+              style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;border:2px solid #A78BFA;cursor:pointer;font-size:13px;font-weight:600;background:transparent;color:#7C3AED">
+              <span style="width:8px;height:8px;border-radius:50%;background:#A78BFA;display:inline-block"></span>
+              Sunmi P1 <span id="edcTabCntP1" style="font-size:12px"></span>
+            </button>
+            <button data-dev="P2"    onclick="_edcSetTab(this)" class="edc-tab"
+              style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;border:2px solid #F472B6;cursor:pointer;font-size:13px;font-weight:600;background:transparent;color:#DB2777">
+              <span style="width:8px;height:8px;border-radius:50%;background:#F472B6;display:inline-block"></span>
+              Sunmi P2 <span id="edcTabCntP2" style="font-size:12px"></span>
+            </button>
           </div>
           <div class="tbl-scroll" style="padding:0;max-height:480px;overflow-y:auto">
             <table class="tbl" id="edcBreakdownTable" style="border-collapse:separate;border-spacing:0">
@@ -3840,22 +3870,99 @@ function _edcLoadPrevious(weekName, curLoi, curTerm, curTB) {
 
 var _edcPrevMap = {}; // prevBreakdown để tính delta
 
+var _edcActiveTab  = 'ALL'; // Tab đang chọn
+var _edcLastMap    = {};    // Cache errorMap để filter lại
+var _edcLastPrevMap = {};
+
+// Màu cột theo loại
+var _EDC_TAB_CFG = {
+  ALL:   { label: 'Tất cả',  color: '#1e3a5f', bg: '#1e3a5f', border: '#1e3a5f', dot: '' },
+  NAYAX: { label: 'Nayax',   color: '#D97706', bg: '#FEF3C7', border: '#F59E0B', dot: '#F59E0B' },
+  NEXGO: { label: 'Nexgo',   color: '#2563EB', bg: '#DBEAFE', border: '#60A5FA', dot: '#60A5FA' },
+  P1:    { label: 'Sunmi P1',color: '#7C3AED', bg: '#EDE9FE', border: '#A78BFA', dot: '#A78BFA' },
+  P2:    { label: 'Sunmi P2',color: '#DB2777', bg: '#FCE7F3', border: '#F472B6', dot: '#F472B6' },
+};
+
+function _edcSetTab(btn) {
+  var dev = btn.dataset.dev;
+  _edcActiveTab = dev;
+
+  // Cập nhật style các tab
+  document.querySelectorAll('.edc-tab').forEach(function(b) {
+    var d   = b.dataset.dev;
+    var cfg = _EDC_TAB_CFG[d] || _EDC_TAB_CFG.ALL;
+    if (d === dev) {
+      b.style.background = cfg.bg || '#1e3a5f';
+      b.style.color      = d === 'ALL' ? '#fff' : cfg.color;
+      b.style.borderColor = cfg.border || '#1e3a5f';
+      b.style.fontWeight  = '700';
+    } else {
+      b.style.background  = d === 'ALL' ? 'transparent' : 'transparent';
+      b.style.color       = d === 'ALL' ? 'var(--text2)' : _EDC_TAB_CFG[d].color;
+      b.style.borderColor = d === 'ALL' ? 'var(--border)' : _EDC_TAB_CFG[d].border;
+      b.style.fontWeight  = '600';
+    }
+  });
+  // Đặt lại tab ALL
+  var allBtn = document.querySelector('.edc-tab[data-dev="ALL"]');
+  if (allBtn) {
+    if (dev === 'ALL') {
+      allBtn.style.background = '#1e3a5f'; allBtn.style.color = '#fff';
+    } else {
+      allBtn.style.background = 'transparent'; allBtn.style.color = 'var(--text2)';
+      allBtn.style.border = '2px solid var(--border)';
+    }
+  }
+
+  _edcRenderBreakdown(_edcLastMap, _edcLastPrevMap);
+}
+
+function _edcUpdateTabCounts(errorMap) {
+  var totals = { ALL: 0, NAYAX: 0, NEXGO: 0, P1: 0, P2: 0 };
+  Object.keys(errorMap).forEach(function(k) {
+    var e = errorMap[k];
+    totals.ALL   += e.TOTAL;
+    totals.NAYAX += e.NAYAX;
+    totals.NEXGO += e.NEXGO;
+    totals.P1    += e.P1;
+    totals.P2    += e.P2;
+  });
+  ['ALL','NAYAX','NEXGO','P1','P2'].forEach(function(d) {
+    var el = document.getElementById('edcTabCnt' + d);
+    if (el) el.textContent = totals[d] > 0 ? totals[d].toLocaleString() : '';
+  });
+}
+
 function _edcRenderBreakdown(errorMap, prevMap) {
   prevMap = prevMap || _edcPrevMap || {};
+  _edcLastMap     = errorMap || {};
+  _edcLastPrevMap = prevMap;
+
   var tbody   = document.getElementById('edcBreakdownBody');
   var tfoot   = document.getElementById('edcBreakdownFoot');
   var countEl = document.getElementById('edcBreakdownCount');
   if (!tbody) return;
 
   if (!errorMap || Object.keys(errorMap).length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:20px">Chưa có dữ liệu</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:20px">Chưa có dữ liệu</td></tr>';
     if (tfoot) tfoot.style.display = 'none';
     return;
   }
 
-  // Sort theo TOTAL giảm dần
-  var keys = Object.keys(errorMap).sort(function(a, b) {
-    return errorMap[b].TOTAL - errorMap[a].TOTAL;
+  _edcUpdateTabCounts(errorMap);
+
+  // Filter theo tab đang chọn
+  var dev = _edcActiveTab || 'ALL';
+  var allKeys = Object.keys(errorMap);
+  var keys = (dev === 'ALL')
+    ? allKeys
+    : allKeys.filter(function(k) { return errorMap[k][dev] > 0; });
+
+  // Sort theo cột đang xem
+  keys.sort(function(a, b) {
+    var va = dev === 'ALL' ? errorMap[b].TOTAL : errorMap[b][dev];
+    var vb = dev === 'ALL' ? errorMap[a].TOTAL : errorMap[a][dev];
+    return va - vb;
   });
 
   var ftNAYAX = 0, ftNEXGO = 0, ftP1 = 0, ftP2 = 0, ftTOTAL = 0, ftPrevTotal = 0;
@@ -3900,10 +4007,10 @@ function _edcRenderBreakdown(errorMap, prevMap) {
 
   if (tfoot) {
     tfoot.style.display = 'table-footer-group';
-    document.getElementById('edcFtNAYAX').textContent  = ftNAYAX.toLocaleString();
-    document.getElementById('edcFtNEXGO').textContent  = ftNEXGO.toLocaleString();
-    document.getElementById('edcFtP1').textContent     = ftP1.toLocaleString();
-    document.getElementById('edcFtP2').textContent     = ftP2.toLocaleString();
+    document.getElementById('edcFtNAYAX').textContent  = ftNAYAX > 0 ? ftNAYAX.toLocaleString() : '—';
+    document.getElementById('edcFtNEXGO').textContent  = ftNEXGO > 0 ? ftNEXGO.toLocaleString() : '—';
+    document.getElementById('edcFtP1').textContent     = ftP1    > 0 ? ftP1.toLocaleString()    : '—';
+    document.getElementById('edcFtP2').textContent     = ftP2    > 0 ? ftP2.toLocaleString()    : '—';
     document.getElementById('edcFtTOTAL').textContent  = ftTOTAL.toLocaleString();
     // Delta tổng cộng ở footer
     var ftDeltaEl = document.getElementById('edcFtDelta');
@@ -3916,7 +4023,10 @@ function _edcRenderBreakdown(errorMap, prevMap) {
       ftDeltaEl.textContent = '';
     }
   }
-  if (countEl) countEl.textContent = '(' + keys.length + ' loại lỗi)';
+  if (countEl) {
+    var filterLabel = dev === 'ALL' ? '' : ' — ' + (_EDC_TAB_CFG[dev] ? _EDC_TAB_CFG[dev].label : dev);
+    countEl.textContent = '(' + keys.length + ' loại lỗi' + filterLabel + ')';
+  }
 }
 
 function _escHtml(str) {
@@ -3992,41 +4102,50 @@ function edcSaveSummary() {
     return { maLoi: k, loaiLoi: e.loaiLoi||'', NAYAX: e.NAYAX, NEXGO: e.NEXGO, P1: e.P1, P2: e.P2, TOTAL: e.TOTAL };
   });
 
-  var CHUNK_SIZE = 25;
+  var CHUNK_SIZE = 5; // 5 dòng/chunk — an toàn cho URL GET
   var chunks = [];
   for (var ci = 0; ci < breakdownRows.length; ci += CHUNK_SIZE) {
     chunks.push(breakdownRows.slice(ci, ci + CHUNK_SIZE));
   }
 
   if (chunks.length === 0) {
-    // Không có breakdown — vẫn xóa data cũ trên sheet
     apiGet({ action:'saveEdcBreakdown', weekName:curWeek, rows:'[]', append:'0' },
       function(r){ if (!r||r.error) hasErr=true; _checkDone(); },
       function(){ hasErr=true; _checkDone(); });
     return;
   }
 
-  // Gửi tuần tự từng chunk
-  (function sendChunk(idx) {
-    apiGet({
-      action:   'saveEdcBreakdown',
-      weekName: curWeek,
-      rows:     JSON.stringify(chunks[idx]),
-      append:   idx === 0 ? '0' : '1'
-    }, function(r) {
-      if (!r || r.error) { hasErr = true; _checkDone(); return; }
-      if (idx + 1 < chunks.length) {
-        sendChunk(idx + 1);
-      } else {
-        _checkDone();
-      }
-    }, function() { hasErr = true; _checkDone(); });
-  })(0);
+  // Bước 1: Xóa data cũ trước (gửi mảng rỗng, append=0)
+  // Bước 2: Append từng chunk tuần tự (append=1)
+  apiGet({ action:'saveEdcBreakdown', weekName:curWeek, rows:'[]', append:'0' },
+    function(clearRes) {
+      if (!clearRes || clearRes.error) { hasErr = true; _checkDone(); return; }
+      // Gửi từng chunk với append=1
+      (function sendChunk(idx) {
+        apiGet({
+          action:   'saveEdcBreakdown',
+          weekName: curWeek,
+          rows:     JSON.stringify(chunks[idx]),
+          append:   '1'
+        }, function(r) {
+          if (!r || r.error) { hasErr = true; _checkDone(); return; }
+          if (idx + 1 < chunks.length) {
+            sendChunk(idx + 1);
+          } else {
+            _checkDone(); // Xong toàn bộ
+          }
+        }, function() { hasErr = true; _checkDone(); });
+      })(0);
+    },
+    function() { hasErr = true; _checkDone(); });
 }
 
 // Reset EDC khi đổi tuần
 function _edcReset() {
   _edcCurrentData = null;
+  _edcActiveTab   = 'ALL';
+  _edcLastMap     = {};
+  _edcLastPrevMap = {};
   // Ẩn cards
   var summaryEl = document.getElementById('edcSummaryBlock');
   if (summaryEl) summaryEl.style.display = 'none';
