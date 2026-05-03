@@ -682,51 +682,6 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
           </div>
         </div>
 
-        <!-- Row 2: Donut + Daily Line chart -->
-        <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;margin-top:20px" id="edcChartsRow">
-
-          <!-- Donut: Tỉ trọng lỗi theo dòng thiết bị -->
-          <div class="section-block" style="padding:20px">
-            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:14px">📊 TỈ TRỌNG LỖI</div>
-            <canvas id="edcDonutChart" width="260" height="260" style="display:block;margin:0 auto"></canvas>
-            <div id="edcDonutLegend" style="margin-top:14px;display:flex;flex-direction:column;gap:6px"></div>
-          </div>
-
-          <!-- Line/Bar: Lỗi theo ngày -->
-          <div class="section-block" style="padding:20px">
-            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:14px">📈 THEO DÕI LỖI THEO NGÀY</div>
-            <div style="position:relative;height:230px">
-              <canvas id="edcDailyChart"></canvas>
-            </div>
-            <div class="tbl-scroll" style="padding:0;margin-top:14px;max-height:200px;overflow-y:auto">
-              <table class="tbl" id="edcDailyTable">
-                <thead style="position:sticky;top:0;z-index:2">
-                  <tr>
-                    <th style="text-align:center;width:90px">NGÀY</th>
-                    <th style="text-align:center;color:#60A5FA">LỖI NEXGO</th>
-                    <th style="text-align:center;color:#F59E0B">LỖI NGÂN HÀNG</th>
-                    <th style="text-align:center;color:#A78BFA">LỖI SUNMI</th>
-                    <th style="text-align:center;color:#10B981">LỖI NGHIỆP VỤ</th>
-                    <th style="text-align:center;font-weight:700">TỔNG LỖI</th>
-                  </tr>
-                </thead>
-                <tbody id="edcDailyBody">
-                  <tr><td colspan="6" style="text-align:center;color:var(--text2);padding:16px">Chưa có dữ liệu</td></tr>
-                </tbody>
-                <tfoot id="edcDailyFoot" style="display:none;position:sticky;bottom:0;z-index:2">
-                  <tr style="background:#E8F4FD;font-weight:700;border-top:2px solid #2d5a9e">
-                    <td style="padding:8px 12px;background:#E8F4FD;color:#1e3a5f">TỔNG</td>
-                    <td style="text-align:center;background:#E8F4FD" id="edcDftNEXGO"></td>
-                    <td style="text-align:center;background:#E8F4FD" id="edcDftNganHang"></td>
-                    <td style="text-align:center;background:#E8F4FD" id="edcDftSUNMI"></td>
-                    <td style="text-align:center;background:#E8F4FD" id="edcDftNghiepVu"></td>
-                    <td style="text-align:center;background:#E8F4FD;font-weight:800" id="edcDftTotal"></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
 
         <!-- Bảng tổng hợp lỗi theo dòng thiết bị -->
         <div style="margin-top:24px" id="edcBreakdownWrap">
@@ -793,6 +748,52 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
                 </tr>
               </tfoot>
             </table>
+          </div>
+        </div>
+
+        <!-- Row 2: Donut + Daily Line chart -->
+        <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;margin-top:20px" id="edcChartsRow">
+
+          <!-- Donut: Tỉ trọng lỗi theo dòng thiết bị -->
+          <div class="section-block" style="padding:20px">
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:14px">📊 TỈ TRỌNG LỖI</div>
+            <canvas id="edcDonutChart" width="260" height="260" style="display:block;margin:0 auto"></canvas>
+            <div id="edcDonutLegend" style="margin-top:14px;display:flex;flex-direction:column;gap:6px"></div>
+          </div>
+
+          <!-- Line/Bar: Lỗi theo ngày -->
+          <div class="section-block" style="padding:20px">
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:14px">📈 THEO DÕI LỖI THEO NGÀY</div>
+            <div style="position:relative;height:230px">
+              <canvas id="edcDailyChart"></canvas>
+            </div>
+            <div class="tbl-scroll" style="padding:0;margin-top:14px;max-height:200px;overflow-y:auto">
+              <table class="tbl" id="edcDailyTable">
+                <thead style="position:sticky;top:0;z-index:2">
+                  <tr>
+                    <th style="text-align:center;width:90px">NGÀY</th>
+                    <th style="text-align:center;color:#F59E0B">NAYAX</th>
+                    <th style="text-align:center;color:#60A5FA">NEXGO</th>
+                    <th style="text-align:center;color:#A78BFA">SUNMI P1</th>
+                    <th style="text-align:center;color:#F472B6">SUNMI P2</th>
+                    <th style="text-align:center;font-weight:700">TỔNG LỖI</th>
+                  </tr>
+                </thead>
+                <tbody id="edcDailyBody">
+                  <tr><td colspan="6" style="text-align:center;color:var(--text2);padding:16px">Chưa có dữ liệu</td></tr>
+                </tbody>
+                <tfoot id="edcDailyFoot" style="display:none;position:sticky;bottom:0;z-index:2">
+                  <tr style="background:#E8F4FD;font-weight:700;border-top:2px solid #2d5a9e">
+                    <td style="padding:8px 12px;background:#E8F4FD;color:#1e3a5f">TỔNG</td>
+                    <td style="text-align:center;background:#E8F4FD;color:#D97706" id="edcDftNAYAX"></td>
+                    <td style="text-align:center;background:#E8F4FD;color:#2563EB" id="edcDftNEXGO"></td>
+                    <td style="text-align:center;background:#E8F4FD;color:#7C3AED" id="edcDftP1"></td>
+                    <td style="text-align:center;background:#E8F4FD;color:#DB2777" id="edcDftP2"></td>
+                    <td style="text-align:center;background:#E8F4FD;font-weight:800" id="edcDftTotal"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -3515,70 +3516,73 @@ function _edcRenderDailyChart(dailyMap, weekName) {
   var canvas  = document.getElementById('edcDailyChart');
   if (!tbody || !dailyMap) return;
 
-  // Sort ngày tăng dần
+  // dailyMap cần có NAYAX, NEXGO, P1, P2 theo ngày
+  // Hiện tại dailyMap có: NAYAX, NEXGO, SUNMI (P1+P2 gộp), total
+  // Cần tách P1/P2 riêng → thêm vào vòng loop parse
   var days = Object.keys(dailyMap).sort(function(a, b) {
     var pa = a.split('/'), pb = b.split('/');
     return new Date(pa[2],pa[1]-1,pa[0]) - new Date(pb[2],pb[1]-1,pb[0]);
   });
-  if (days.length === 0) { return; }
+  if (days.length === 0) return;
 
-  var ftNEXGO = 0, ftNganHang = 0, ftSUNMI = 0, ftNghiepVu = 0, ftTotal = 0;
+  var ftNAYAX = 0, ftNEXGO = 0, ftP1 = 0, ftP2 = 0, ftTotal = 0;
 
   var rows = days.map(function(d) {
     var e = dailyMap[d];
-    ftNEXGO    += e.NEXGO;
-    ftNganHang += e.nganHang;
-    ftSUNMI    += e.SUNMI;
-    ftNghiepVu += e.nghiepVu;
-    ftTotal    += e.total;
+    var nayax = e.NAYAX || 0, nexgo = e.NEXGO || 0;
+    var p1 = e.P1 || 0, p2 = e.P2 || 0, tot = e.total || 0;
+    ftNAYAX += nayax; ftNEXGO += nexgo; ftP1 += p1; ftP2 += p2; ftTotal += tot;
+    function _dc(val, color) {
+      return '<td style="text-align:center;color:' + color + ';font-size:13px">'
+           + (val > 0 ? val.toLocaleString() : '—') + '</td>';
+    }
     return '<tr>'
-      + '<td style="text-align:center;font-weight:600">' + d + '</td>'
-      + '<td style="text-align:center;color:#2563EB">' + e.NEXGO.toLocaleString() + '</td>'
-      + '<td style="text-align:center;color:#D97706">' + e.nganHang.toLocaleString() + '</td>'
-      + '<td style="text-align:center;color:#7C3AED">' + e.SUNMI.toLocaleString() + '</td>'
-      + '<td style="text-align:center;color:#10B981">' + e.nghiepVu.toLocaleString() + '</td>'
-      + '<td style="text-align:center;font-weight:700">' + e.total.toLocaleString() + '</td>'
+      + '<td style="text-align:center;font-weight:600;font-size:12px">' + d + '</td>'
+      + _dc(nayax, '#D97706')
+      + _dc(nexgo, '#2563EB')
+      + _dc(p1,    '#7C3AED')
+      + _dc(p2,    '#DB2777')
+      + '<td style="text-align:center;font-weight:700">' + tot.toLocaleString() + '</td>'
       + '</tr>';
   });
   tbody.innerHTML = rows.join('');
 
   if (tfoot) {
     tfoot.style.display = 'table-footer-group';
-    document.getElementById('edcDftNEXGO').textContent    = ftNEXGO.toLocaleString();
-    document.getElementById('edcDftNganHang').textContent = ftNganHang.toLocaleString();
-    document.getElementById('edcDftSUNMI').textContent    = ftSUNMI.toLocaleString();
-    document.getElementById('edcDftNghiepVu').textContent = ftNghiepVu.toLocaleString();
-    document.getElementById('edcDftTotal').textContent    = ftTotal.toLocaleString();
+    document.getElementById('edcDftNAYAX').textContent  = ftNAYAX.toLocaleString();
+    document.getElementById('edcDftNEXGO').textContent  = ftNEXGO.toLocaleString();
+    document.getElementById('edcDftP1').textContent     = ftP1.toLocaleString();
+    document.getElementById('edcDftP2').textContent     = ftP2.toLocaleString();
+    document.getElementById('edcDftTotal').textContent  = ftTotal.toLocaleString();
   }
 
-  // Chart
   if (!canvas) return;
   if (_edcDailyInstance) { _edcDailyInstance.destroy(); _edcDailyInstance = null; }
 
   var labels   = days.map(function(d) { var p=d.split('/'); return p[0]+'/'+p[1]; });
-  var nexgoArr = days.map(function(d){ return dailyMap[d].NEXGO; });
-  var nhArr    = days.map(function(d){ return dailyMap[d].nganHang; });
-  var sunmiArr = days.map(function(d){ return dailyMap[d].SUNMI; });
-  var nvArr    = days.map(function(d){ return dailyMap[d].nghiepVu; });
-  var totArr   = days.map(function(d){ return dailyMap[d].total; });
+  var nayaxArr = days.map(function(d){ return dailyMap[d].NAYAX || 0; });
+  var nexgoArr = days.map(function(d){ return dailyMap[d].NEXGO || 0; });
+  var p1Arr    = days.map(function(d){ return dailyMap[d].P1    || 0; });
+  var p2Arr    = days.map(function(d){ return dailyMap[d].P2    || 0; });
+  var totArr   = days.map(function(d){ return dailyMap[d].total || 0; });
 
   _edcDailyInstance = new Chart(canvas.getContext('2d'), {
     data: {
       labels: labels,
       datasets: [
-        { type: 'bar',  label: 'Tổng lỗi',        data: totArr,   backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.4)', borderWidth:1, yAxisID:'y' },
-        { type: 'line', label: 'Lỗi Nexgo',        data: nexgoArr, borderColor: '#3B82F6', backgroundColor:'transparent', borderWidth:2, pointRadius:4, tension:.3, yAxisID:'y' },
-        { type: 'line', label: 'Lỗi ngân hàng',    data: nhArr,    borderColor: '#F59E0B', backgroundColor:'transparent', borderWidth:2, pointRadius:4, tension:.3, yAxisID:'y' },
-        { type: 'line', label: 'Lỗi Sunmi',        data: sunmiArr, borderColor: '#8B5CF6', backgroundColor:'transparent', borderWidth:2, pointRadius:4, tension:.3, yAxisID:'y' },
-        { type: 'line', label: 'Lỗi nghiệp vụ',   data: nvArr,    borderColor: '#10B981', backgroundColor:'transparent', borderWidth:2, pointRadius:4, tension:.3, yAxisID:'y' },
+        { type:'bar',  label:'Tổng lỗi',   data:totArr,   backgroundColor:'rgba(59,130,246,0.12)', borderColor:'rgba(59,130,246,0.3)', borderWidth:1, yAxisID:'y' },
+        { type:'line', label:'Nexgo',       data:nexgoArr, borderColor:'#3B82F6', backgroundColor:'transparent', borderWidth:2, pointRadius:4, tension:.3, yAxisID:'y' },
+        { type:'line', label:'Nayax',       data:nayaxArr, borderColor:'#F59E0B', backgroundColor:'transparent', borderWidth:2, pointRadius:4, tension:.3, yAxisID:'y' },
+        { type:'line', label:'Sunmi P1',    data:p1Arr,    borderColor:'#8B5CF6', backgroundColor:'transparent', borderWidth:2, pointRadius:4, tension:.3, yAxisID:'y' },
+        { type:'line', label:'Sunmi P2',    data:p2Arr,    borderColor:'#EC4899', backgroundColor:'transparent', borderWidth:2, pointRadius:4, tension:.3, yAxisID:'y' },
       ]
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
-      scales: {
-        y: { beginAtZero: true, ticks: { font: { size: 11 } }, title: { display: true, text: 'Số lỗi', font:{size:11} } },
-        x: { ticks: { font: { size: 11 } } }
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, font:{size:11} } } },
+      scales:{
+        y:{ beginAtZero:true, ticks:{font:{size:11}}, title:{display:true, text:'Số lỗi', font:{size:11}} },
+        x:{ ticks:{font:{size:11}} }
       }
     }
   });
@@ -4010,12 +4014,12 @@ function edcHandleFile(file) {
         var loaiSK = (colLoaiSK >= 0 && row[colLoaiSK] != null) ? String(row[colLoaiSK]).trim() : '';
         var errGrp = _getErrGroup(loaiSK);
         if (dayStr) {
-          if (!dailyMap[dayStr]) dailyMap[dayStr] = { NAYAX:0, NEXGO:0, SUNMI:0, nganHang:0, nghiepVu:0, thietBi:0, total:0 };
+          if (!dailyMap[dayStr]) dailyMap[dayStr] = { NAYAX:0, NEXGO:0, P1:0, P2:0, total:0 };
           dailyMap[dayStr].total++;
-          if (devType === 'NAYAX') dailyMap[dayStr].NAYAX++;
+          if (devType === 'NAYAX')      dailyMap[dayStr].NAYAX++;
           else if (devType === 'NEXGO') dailyMap[dayStr].NEXGO++;
-          else if (devType === 'P1' || devType === 'P2') dailyMap[dayStr].SUNMI++;
-          dailyMap[dayStr][errGrp]++;
+          else if (devType === 'P1')    dailyMap[dayStr].P1++;
+          else if (devType === 'P2')    dailyMap[dayStr].P2++;
         }
 
         // Donut
