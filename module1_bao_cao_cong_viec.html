@@ -133,7 +133,7 @@ th{color:rgba(255,255,255,0.9);font-size:11px;font-weight:600;padding:12px 10px;
 th:last-child{border-right:none}
 tbody tr{border-bottom:1px solid var(--border);transition:background .12s}
 tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:var(--primary-light)}
+tbody tr:hover{background:#D0D5FF;cursor:default;transition:background .12s}
 td{padding:8px 10px;vertical-align:top;font-size:13px;color:var(--text);border-right:1px solid var(--border)}
 td:last-child{border-right:none}
 .td-num{text-align:center;color:var(--text3);font-size:11px;font-weight:700;width:36px;vertical-align:middle}
@@ -279,7 +279,7 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
 .rpt-tbl th{color:rgba(255,255,255,.9);font-size:11px;font-weight:600;padding:11px 10px;text-align:center;border-right:1px solid rgba(255,255,255,.08);white-space:nowrap;letter-spacing:.5px}
 .rpt-tbl th:last-child{border-right:none}
 .rpt-tbl tbody tr{border-bottom:1px solid var(--border)}
-.rpt-tbl tbody tr:hover{background:var(--primary-light)}
+.rpt-tbl tbody tr:hover{background:#D0D5FF;cursor:default;transition:background .12s}
 .rpt-tbl td{padding:9px 10px;vertical-align:middle;font-size:13px;border-right:1px solid var(--border)}
 .rpt-tbl td:last-child{border-right:none}
 /* TREND */
@@ -848,8 +848,20 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
 
       <!-- BANG TICKET TON -->
       <div class="section-block" id="ticketPendingBlock" style="display:none;margin-bottom:16px">
-        <div class="section-block-title" style="display:flex;align-items:center;justify-content:space-between">
-          <span>⏳ Danh sách Ticket chưa hoàn thành</span>
+        <div class="section-block-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span>⏳ Danh sách Ticket chưa hoàn thành</span>
+            <span id="ticketPendingCount" style="font-size:12px;font-weight:400;color:var(--text2)"></span>
+            <!-- Filter Quy trình -->
+            <div style="display:flex;align-items:center;gap:6px">
+              <label style="font-size:12px;font-weight:500;color:var(--text2)">Quy trình:</label>
+              <select id="ticketQuyTrinhFilter" onchange="_filterPendingByQuyTrinh()"
+                style="font-size:12px;padding:5px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-family:inherit;cursor:pointer;outline:none;min-width:180px;transition:border .15s"
+                onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                <option value="">Tất cả</option>
+              </select>
+            </div>
+          </div>
           <button id="saveNotesBtn" onclick="saveTicketNotes()" style="background:#5B47E0;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:none">
             💾 Lưu ghi chú
           </button>
@@ -2904,6 +2916,34 @@ function renderPendingTickets(tickets) {
   block.style.display = 'block';
   document.getElementById('saveNotesBtn').style.display = 'inline-block';
 
+  // Populate dropdown Quy trình (các giá trị unique, giữ thứ tự xuất hiện)
+  var sel = document.getElementById('ticketQuyTrinhFilter');
+  if (sel) {
+    var seen = {}, opts = ['<option value="">Tất cả</option>'];
+    tickets.forEach(function(t) {
+      var qt = (t.quyTrinh || '').trim();
+      if (qt && !seen[qt]) { seen[qt] = 1; opts.push('<option value="' + qt.replace(/"/g,'&quot;') + '">' + qt + '</option>'); }
+    });
+    sel.innerHTML = opts.join('');
+    sel.value = ''; // reset về Tất cả
+  }
+
+  _renderPendingRows(tickets);
+}
+
+function _filterPendingByQuyTrinh() {
+  var sel = document.getElementById('ticketQuyTrinhFilter');
+  var val = sel ? sel.value : '';
+  var filtered = val ? _pendingTickets.filter(function(t){ return (t.quyTrinh||'').trim() === val; }) : _pendingTickets;
+  _renderPendingRows(filtered);
+}
+
+function _renderPendingRows(tickets) {
+  var tbody = document.getElementById('ticketPendingBody');
+  var cntEl = document.getElementById('ticketPendingCount');
+  if (!tbody) return;
+  if (cntEl) cntEl.textContent = '(' + tickets.length + '/' + _pendingTickets.length + ' ticket)';
+
   var rows = [];
   tickets.forEach(function(t) {
     var note  = (_ticketNotes[t.ma] || {}).ghiChu || '';
@@ -2929,7 +2969,7 @@ function renderPendingTickets(tickets) {
       + '</tr>'
     );
   });
-  tbody.innerHTML = rows.join('');
+  tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="8" style="text-align:center;padding:16px;color:var(--text2)">Không có ticket nào trong quy trình này</td></tr>';
 }
 
 function _noteChanged(ma, val) {
