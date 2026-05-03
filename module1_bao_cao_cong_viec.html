@@ -3458,6 +3458,30 @@ var _EDC_DEV_COLORS = {
   OTHER:   { color: '#9CA3AF', label: 'Khác'     },
 };
 
+// Tính errGroupMap từ breakdown curMap (fallback khi không có _EdcDaily)
+function _edcCalcErrGroupFromMap(curMap) {
+  if (!curMap || Object.keys(curMap).length === 0) return null;
+  var eg = { NAYAX: 0, NEXGO: 0, SUNMI_P1: 0, SUNMI_P2: 0, OTHER: 0 };
+  Object.keys(curMap).forEach(function(k) {
+    var e = curMap[k];
+    eg.NAYAX    += (e.NAYAX  || 0);
+    eg.NEXGO    += (e.NEXGO  || 0);
+    eg.SUNMI_P1 += (e.P1     || 0);
+    eg.SUNMI_P2 += (e.P2     || 0);
+  });
+  return eg;
+}
+
+// Hiển thị thông báo khi không có daily data
+function _edcShowDailyNoData() {
+  var tbody = document.getElementById('edcDailyBody');
+  var tfoot = document.getElementById('edcDailyFoot');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text2)">'
+    + '⚠️ Chưa có dữ liệu theo ngày — Upload lại file EDC và lưu để xem biểu đồ này'
+    + '</td></tr>';
+  if (tfoot) tfoot.style.display = 'none';
+}
+
 function _edcRenderDonut(errGroupMap) {
   var canvas = document.getElementById('edcDonutChart');
   var legend = document.getElementById('edcDonutLegend');
@@ -4544,10 +4568,25 @@ function _edcLoadExisting(weekName) {
 
       // Load daily + donut
       apiGet({ action: 'getEdcDaily', weekName: weekName }, function(dr) {
-        if (!dr || dr.error) return;
-        if (dr.errGroupMap) _edcRenderDonut(dr.errGroupMap);
-        if (dr.dailyMap && Object.keys(dr.dailyMap).length > 0) _edcRenderDailyChart(dr.dailyMap, weekName);
-      }, function(){});
+        if (dr && !dr.error && dr.errGroupMap) {
+          // Có daily data → dùng trực tiếp
+          _edcRenderDonut(dr.errGroupMap);
+          if (dr.dailyMap && Object.keys(dr.dailyMap).length > 0) {
+            _edcRenderDailyChart(dr.dailyMap, weekName);
+          } else {
+            _edcShowDailyNoData();
+          }
+        } else {
+          // Không có daily data → tính donut từ breakdown data đã load
+          var eg = _edcCalcErrGroupFromMap(curMap);
+          if (eg) _edcRenderDonut(eg);
+          _edcShowDailyNoData();
+        }
+      }, function() {
+        var eg = _edcCalcErrGroupFromMap(curMap);
+        if (eg) _edcRenderDonut(eg);
+        _edcShowDailyNoData();
+      });
 
     }, function(){});
   }, function() {
