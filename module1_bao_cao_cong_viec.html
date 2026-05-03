@@ -692,7 +692,8 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
             <table class="tbl" id="edcBreakdownTable" style="border-collapse:separate;border-spacing:0">
               <thead style="position:sticky;top:0;z-index:3">
                 <tr>
-                  <th style="text-align:left;min-width:320px;position:sticky;top:0">MÃ LỖI</th>
+                  <th style="text-align:left;min-width:120px;position:sticky;top:0">MÃ LỖI</th>
+                  <th style="text-align:left;min-width:220px;position:sticky;top:0">LOẠI LỖI</th>
                   <th style="text-align:center;width:100px;color:#F59E0B;position:sticky;top:0">NAYAX</th>
                   <th style="text-align:center;width:100px;color:#60A5FA;position:sticky;top:0">NEXGO</th>
                   <th style="text-align:center;width:80px;color:#A78BFA;position:sticky;top:0">P1</th>
@@ -702,11 +703,11 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
                 </tr>
               </thead>
               <tbody id="edcBreakdownBody">
-                <tr><td colspan="7" style="text-align:center;color:var(--text2);padding:20px">Chưa có dữ liệu</td></tr>
+                <tr><td colspan="8" style="text-align:center;color:var(--text2);padding:20px">Chưa có dữ liệu</td></tr>
               </tbody>
               <tfoot id="edcBreakdownFoot" style="display:none;position:sticky;bottom:0;z-index:2">
                 <tr style="background:#E8F4FD;font-weight:700;border-top:2px solid #2d5a9e">
-                  <td style="padding:10px 14px;color:#1e3a5f;background:#E8F4FD">TỔNG CỘNG</td>
+                  <td colspan="2" style="padding:10px 14px;color:#1e3a5f;background:#E8F4FD">TỔNG CỘNG</td>
                   <td style="text-align:center;color:#F59E0B;background:#E8F4FD" id="edcFtNAYAX"></td>
                   <td style="text-align:center;color:#60A5FA;background:#E8F4FD" id="edcFtNEXGO"></td>
                   <td style="text-align:center;color:#A78BFA;background:#E8F4FD" id="edcFtP1"></td>
@@ -3766,8 +3767,10 @@ function edcHandleFile(file) {
         var devType = _getDeviceType(serialId);
 
         if (!errorMap[errorKey]) {
-          errorMap[errorKey] = { NAYAX: 0, NEXGO: 0, P1: 0, P2: 0, OTHER: 0, TOTAL: 0 };
+          errorMap[errorKey] = { loaiLoi: loaiLoi, NAYAX: 0, NEXGO: 0, P1: 0, P2: 0, OTHER: 0, TOTAL: 0 };
         }
+        // Cập nhật loaiLoi nếu chưa có (lấy giá trị đầu tiên gặp)
+        if (!errorMap[errorKey].loaiLoi && loaiLoi) errorMap[errorKey].loaiLoi = loaiLoi;
         errorMap[errorKey][devType]++;
         errorMap[errorKey].TOTAL++;
       }
@@ -3879,9 +3882,11 @@ function _edcRenderBreakdown(errorMap, prevMap) {
     var prev = prevMap[k] || null;
     ftNAYAX += e.NAYAX; ftNEXGO += e.NEXGO; ftP1 += e.P1; ftP2 += e.P2; ftTOTAL += e.TOTAL;
     if (prev) ftPrevTotal += prev.TOTAL;
-    var keyHtml = '<span style="font-size:13px;font-weight:600;color:var(--text)">' + _escHtml(k) + '</span>';
+    var keyHtml   = '<span style="font-size:13px;font-weight:600;color:var(--primary)">' + _escHtml(k) + '</span>';
+    var loaiHtml  = e.loaiLoi ? '<span style="font-size:12px;color:var(--text2)">' + _escHtml(e.loaiLoi) + '</span>' : '<span style="color:var(--text3)">—</span>';
     return '<tr>'
       + '<td style="padding:8px 14px">' + keyHtml + '</td>'
+      + '<td style="padding:8px 14px">' + loaiHtml + '</td>'
       + _cell(e.NAYAX, '#D97706')
       + _cell(e.NEXGO, '#2563EB')
       + _cell(e.P1,    '#7C3AED')
@@ -3984,7 +3989,7 @@ function edcSaveSummary() {
   var errorMap = _edcCurrentData.errorMap || {};
   var breakdownRows = Object.keys(errorMap).map(function(k) {
     var e = errorMap[k];
-    return { maLoi: k, NAYAX: e.NAYAX, NEXGO: e.NEXGO, P1: e.P1, P2: e.P2, TOTAL: e.TOTAL };
+    return { maLoi: k, loaiLoi: e.loaiLoi || '', NAYAX: e.NAYAX, NEXGO: e.NEXGO, P1: e.P1, P2: e.P2, TOTAL: e.TOTAL };
   });
   apiGet({
     action:   'saveEdcBreakdown',
@@ -4054,7 +4059,7 @@ function _edcLoadExisting(weekName) {
       var curMap = {};
       if (bdRes && bdRes.rows) {
         bdRes.rows.forEach(function(r) {
-          curMap[r.maLoi] = { NAYAX: r.NAYAX, NEXGO: r.NEXGO, P1: r.P1, P2: r.P2, OTHER: 0, TOTAL: r.TOTAL };
+          curMap[r.maLoi] = { loaiLoi: r.loaiLoi||'', NAYAX: r.NAYAX, NEXGO: r.NEXGO, P1: r.P1, P2: r.P2, OTHER: 0, TOTAL: r.TOTAL };
         });
       }
       if (prevWeekName) {
