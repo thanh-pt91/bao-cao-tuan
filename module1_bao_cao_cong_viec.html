@@ -48,7 +48,7 @@
   --th-bg:#2D1B69;
 }
 /* ── DARK MODE ── */
-html.dark-init body select,body.dark select{background:var(--card);color:var(--text);border-color:var(--border)}
+html.dark-init body select,body.dark select{background:#1E1C35;color:#E8E6FF;border-color:var(--border)}
 html.dark-init body select option,body.dark select option{background:#1E1C35;color:#E8E6FF}
 html.dark-init body input,html.dark-init body textarea,body.dark input,body.dark textarea{background:transparent;color:var(--text)}
 html.dark-init body .cin:focus,body.dark .cin:focus{background:var(--white)}
@@ -174,8 +174,8 @@ td:last-child{border-right:none}
 .td-num{text-align:center;color:var(--text3);font-size:11px;font-weight:700;width:36px;vertical-align:middle}
 .cin{width:100%;border:none;background:transparent;font-family:var(--font);font-size:13px;color:var(--text);padding:3px 4px;border-radius:6px;resize:none;line-height:1.6;min-height:28px;overflow:hidden;word-break:break-word;white-space:pre-wrap;box-sizing:border-box;display:block}
 .cin:focus{outline:2px solid var(--primary);background:var(--white)}
-select.cin{cursor:pointer;height:auto;min-height:30px;text-align:center;text-align-last:center;background:var(--card,var(--white));color:var(--text);padding:4px 2px}
-select.cin option{background:var(--card,#fff);color:var(--text)}
+select.cin{cursor:pointer;background:var(--card,var(--white));color:var(--text);padding:4px 6px;border-radius:6px;border:1px solid var(--border);width:100%}
+select.cin option{background:#fff;color:#1E1B4B}
 input.cin{text-align:center}
 td{padding:6px 8px;vertical-align:middle;font-size:13px;color:var(--text);border-right:1px solid var(--border);height:auto}
 td:last-child{border-right:none}
@@ -519,7 +519,7 @@ html.dark-init body .cin,body.dark .cin{color:#E8E6FF}
             <th style="width:70px">Độ ưu tiên</th>
             <th style="width:80px">TG thực hiện</th>
             <th style="width:110px">Hoàn thành</th>
-            <th style="width:110px">Trạng thái</th>
+            <th style="width:160px">Trạng thái</th>
             <th style="width:22%;text-align:left">Ghi chú</th>
             <th style="width:32px"></th>
           </tr></thead>
