@@ -174,8 +174,8 @@ td:last-child{border-right:none}
 .td-num{text-align:center;color:var(--text3);font-size:11px;font-weight:700;width:36px;vertical-align:middle}
 .cin{width:100%;border:none;background:transparent;font-family:var(--font);font-size:13px;color:var(--text);padding:3px 4px;border-radius:6px;resize:none;line-height:1.6;min-height:28px;overflow:hidden;word-break:break-word;white-space:pre-wrap;box-sizing:border-box;display:block}
 .cin:focus{outline:2px solid var(--primary);background:var(--white)}
-select.cin{cursor:pointer;overflow:hidden;white-space:normal;height:auto;text-align:center;text-align-last:center;background:var(--card,var(--white));color:var(--text)}
-select.cin option{background:var(--card,#fff);color:#1E1B4B}
+select.cin{cursor:pointer;height:auto;min-height:30px;text-align:center;text-align-last:center;background:var(--card,var(--white));color:var(--text);padding:4px 2px}
+select.cin option{background:var(--card,#fff);color:var(--text)}
 input.cin{text-align:center}
 td{padding:6px 8px;vertical-align:middle;font-size:13px;color:var(--text);border-right:1px solid var(--border);height:auto}
 td:last-child{border-right:none}
@@ -316,6 +316,8 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
 .rpt-tbl tbody tr{border-bottom:1px solid var(--border)}
 .rpt-tbl tbody tr:hover{background:#D0D5FF;cursor:default;transition:background .12s}
 .rpt-tbl tbody tr:hover td,.rpt-tbl tbody tr:hover td *{color:#1E1B4B !important}
+html.dark-init body td,body.dark td{color:#E8E6FF}
+html.dark-init body .cin,body.dark .cin{color:#E8E6FF}
 .rpt-tbl td{padding:9px 10px;vertical-align:middle;font-size:13px;border-right:1px solid var(--border)}
 .rpt-tbl td:last-child{border-right:none}
 /* TREND */
