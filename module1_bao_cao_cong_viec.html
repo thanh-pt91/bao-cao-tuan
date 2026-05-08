@@ -1496,10 +1496,22 @@ function apiGet(params, cb) {
 
 function apiPost(body, cb) {
   if (!apiUrl) { cb(null, 'Chưa cấu hình API URL'); return; }
-  // Encode body thanh GET params de dung JSONP
-  // KHONG double-encode: apiGet se tu encodeURIComponent khi build URL
-  var params = { action: body.action, payload: JSON.stringify(body) };
-  apiGet(params, cb);
+  // Dùng fetch POST để tránh giới hạn URL của JSONP
+  // GAS Web App deployed "Anyone" hỗ trợ CORS với POST
+  fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' }, // Tránh CORS preflight
+    body: JSON.stringify(body),
+    redirect: 'follow'
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) { cb(data, null); })
+  .catch(function(err) {
+    console.warn('[apiPost] fetch failed, fallback to JSONP:', err.message);
+    // Fallback: thử JSONP nếu fetch thất bại (cross-origin issue)
+    var params = { action: body.action, payload: JSON.stringify(body) };
+    apiGet(params, cb);
+  });
 }
 
 // ══════════════════════════════════════════════
